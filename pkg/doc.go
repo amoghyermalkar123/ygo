@@ -1,5 +1,5 @@
 package pkg
 
 type Doc struct {
-	store Store
+	store *Store
 }
