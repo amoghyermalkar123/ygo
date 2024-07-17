@@ -21,7 +21,7 @@ type Store struct {
 
 	// A pending update. It contains blocks, which are not yet integrated into our block store due to some issues
 	// TODO: this
-	PendingUpdates any
+	PendingUpdates *PendingUpdate
 
 	// A pending delete set. Just like PendingUpdates, it contains deleted ranges of blocks that have
 	// not been yet applied and are yet to be integrated into BlockStore
@@ -41,4 +41,5 @@ type Store struct {
 	linkedBy int64
 }
 
-func New() *Store { return nil }
+func New() *Store                              { return nil }
+func (s *Store) PendingUpdate() *PendingUpdate { return s.PendingUpdates }
