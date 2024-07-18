@@ -6,7 +6,6 @@ type StoreEvents struct{}
 
 // Store is a core element of a document
 type Store struct {
-	// TODO: this
 	Options Options
 
 	// Types is a map of unique top-level type name and the actual type (the branch)
@@ -24,7 +23,6 @@ type Store struct {
 
 	// A pending delete set. Just like PendingUpdates, it contains deleted ranges of blocks that have
 	// not been yet applied and are yet to be integrated into BlockStore
-	// TODO: this
 	PendingDeletes any
 
 	// sub document, not implemented
