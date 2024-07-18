@@ -1,9 +1,8 @@
 package pkg
 
+// TODO: this
 type PendingUpdate struct {
-	// TODO: this
-	Update Update
-	// TODO: this
+	Update      Update
 	StateVector StateVector
 }
 

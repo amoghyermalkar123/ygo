@@ -20,7 +20,6 @@ type Store struct {
 	BlockStore *BlockStore
 
 	// A pending update. It contains blocks, which are not yet integrated into our block store due to some issues
-	// TODO: this
 	PendingUpdates *PendingUpdate
 
 	// A pending delete set. Just like PendingUpdates, it contains deleted ranges of blocks that have
@@ -32,7 +31,7 @@ type Store struct {
 	subdocs int64
 
 	// Event management
-	Events StoreEvents
+	Events *StoreEvents
 
 	// pointer to parent doc, not implemented
 	parent int64
@@ -41,5 +40,25 @@ type Store struct {
 	linkedBy int64
 }
 
-func New() *Store                              { return nil }
+func New() *Store {
+	return &Store{
+		Options:        Options{},
+		Types:          make(map[string]Branch),
+		NodeRegistry:   []*Branch{},
+		BlockStore:     &BlockStore{},
+		PendingUpdates: nil,
+		PendingDeletes: nil,
+		subdocs:        -1,
+		Events:         nil,
+		parent:         -1,
+		linkedBy:       -1,
+	}
+}
+
 func (s *Store) PendingUpdate() *PendingUpdate { return s.PendingUpdates }
+func (s *Store) PendingDelete()                {}
+func (s *Store) IsSubdoc()                     {}
+func (s *Store) GetLocalState()                {}
+func (s *Store) GetComplexType()               {}
+func (s *Store) GetOrCreateComplexType()       {}
+func (s *Store) EncodeStateFromSnapshot()      {}
