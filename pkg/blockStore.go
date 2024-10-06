@@ -6,10 +6,7 @@ type BlockStore struct {
 }
 
 type ClientBlockList struct {
-	blockCell []*Block
-	gcCell    []*GC
+	clientBlockList []Block
 }
-
-type GC struct{}
 
 type Block struct{}

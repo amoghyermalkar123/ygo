@@ -1,9 +1,9 @@
 package pkg
 
-// TODO: this
 type PendingUpdate struct {
-	Update      Update
-	StateVector StateVector
+	Update Update
 }
 
-type Update struct{}
+type Update struct {
+	clientBlocks map[int64]*ClientBlockList
+}

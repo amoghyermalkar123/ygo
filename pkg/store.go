@@ -1,13 +1,7 @@
 package pkg
 
-type Options struct{}
-
-type StoreEvents struct{}
-
 // Store is a core element of a document
 type Store struct {
-	Options Options
-
 	// Types is a map of unique top-level type name and the actual type (the branch)
 	Types map[string]Branch
 
@@ -21,42 +15,16 @@ type Store struct {
 	// A pending update. It contains blocks, which are not yet integrated into our block store due to some issues
 	PendingUpdates *PendingUpdate
 
-	// A pending delete set. Just like PendingUpdates, it contains deleted ranges of blocks that have
-	// not been yet applied and are yet to be integrated into BlockStore
-	PendingDeletes any
-
-	// sub document, not implemented
-	subdocs int64
-
-	// Event management
-	Events *StoreEvents
-
 	// pointer to parent doc, not implemented
 	parent int64
-
-	// weak links, not implemented
-	linkedBy int64
 }
 
 func New() *Store {
 	return &Store{
-		Options:        Options{},
 		Types:          make(map[string]Branch),
 		NodeRegistry:   []*Branch{},
 		BlockStore:     &BlockStore{},
 		PendingUpdates: nil,
-		PendingDeletes: nil,
-		subdocs:        -1,
-		Events:         nil,
 		parent:         -1,
-		linkedBy:       -1,
 	}
 }
-
-func (s *Store) PendingUpdate() *PendingUpdate { return s.PendingUpdates }
-func (s *Store) PendingDelete()                {}
-func (s *Store) IsSubdoc()                     {}
-func (s *Store) GetLocalState()                {}
-func (s *Store) GetComplexType()               {}
-func (s *Store) GetOrCreateComplexType()       {}
-func (s *Store) EncodeStateFromSnapshot()      {}
