@@ -2,9 +2,6 @@ package pkg
 
 // Store is a core element of a document
 type Store struct {
-	// Types is a map of unique top-level type name and the actual type (the branch)
-	Types map[string]Branch
-
 	// NodeRegistry is a record of all alive nodes(branches) in the document store.
 	NodeRegistry []*Branch
 
@@ -14,17 +11,15 @@ type Store struct {
 
 	// A pending update. It contains blocks, which are not yet integrated into our block store due to some issues
 	PendingUpdates *PendingUpdate
-
-	// pointer to parent doc, not implemented
-	parent int64
 }
 
-func New() *Store {
+func NewStore(clientID ID) *Store {
+	b := NewBlockStore(clientID)
+	br := NewBranch(b.clientBlocks[clientID.ClientID].First(), "branchname")
+
 	return &Store{
-		Types:          make(map[string]Branch),
-		NodeRegistry:   []*Branch{},
-		BlockStore:     &BlockStore{},
+		NodeRegistry:   []*Branch{br},
+		BlockStore:     b,
 		PendingUpdates: nil,
-		parent:         -1,
 	}
 }
