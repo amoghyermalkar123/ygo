@@ -36,6 +36,7 @@ func (doc *Document) Integrate(block *Block) {
 	}
 
 	// Conflict Detection
+	//
 
 	// Conflict resolution by clientID
 	if right != nil && right.ID.Client < block.ID.Client {
