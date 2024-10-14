@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>YATA Visualization</title>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <style>
+    .node circle {
+      fill: steelblue;
+      stroke: #fff;
+      stroke-width: 2px;
+    }
+
+    .node text {
+      font: 12px sans-serif;
+    }
+
+    .link {
+      fill: none;
+      stroke: #ccc;
+      stroke-width: 2px;
+    }
+
+    svg {
+      border: 1px solid #ccc;
+    }
+  </style>
+</head>
+
+<body>
+
+  <h2>YATA Algorithm Visualization (Conflicting Insertions)</h2>
+  <svg width="600" height="400"></svg>
+
+  <script>
+    // Data: Nodes representing insertions (operations)
+    const nodes = [
+      {id: 'o1', name: 'o1', origin: 'origin1', creator: 1},
+      {id: 'o2', name: 'o2', origin: 'origin1', creator: 2},
+      {id: 'o3', name: 'o3', origin: 'origin2', creator: 1},
+      {id: 'newOp', name: 'newOp', origin: 'origin1', creator: 3}
+    ];
+
+    // Links between nodes based on rules and origins (edges between operations)
+    const links = [
+      // Rule 1: No crossing of origins
+      {source: 'o1', target: 'o2'}, // origin1 must precede origin1 inserts
+      {source: 'o1', target: 'newOp'}, // o1 is origin for newOp
+
+      // Rule 3: creator comparison
+      {source: 'o2', target: 'newOp'}, // newOp comes after o2 due to creator
+      {source: 'o3', target: 'newOp'}  // creator and origin define order
+    ];
+
+    // SVG container
+    const svg = d3.select("svg"),
+      width = +svg.attr("width"),
+      height = +svg.attr("height");
+
+    // Create simulation for positioning nodes
+    const simulation = d3.forceSimulation(nodes)
+      .force("link", d3.forceLink(links).id(d => d.id).distance(100))
+      .force("charge", d3.forceManyBody().strength(-300))
+      .force("center", d3.forceCenter(width / 2, height / 2));
+
+    // Create link elements (edges)
+    const link = svg.append("g")
+      .attr("class", "links")
+      .selectAll("line")
+      .data(links)
+      .enter().append("line")
+      .attr("class", "link");
+
+    // Create node elements (operations)
+    const node = svg.append("g")
+      .attr("class", "nodes")
+      .selectAll("g")
+      .data(nodes)
+      .enter().append("g")
+      .attr("class", "node");
+
+    // Draw circles for nodes
+    node.append("circle")
+      .attr("r", 20);
+
+    // Add labels to nodes
+    node.append("text")
+      .attr("dy", -3)
+      .text(d => d.name);
+
+    // Update simulation on every tick (repositioning nodes and links)
+    simulation.on("tick", () => {
+      link
+        .attr("x1", d => d.source.x)
+        .attr("y1", d => d.source.y)
+        .attr("x2", d => d.target.x)
+        .attr("y2", d => d.target.y);
+
+      node
+        .attr("transform", d => `translate(${d.x},${d.y})`);
+    });
+
+    // Apply visual styling to edges and nodes
+    svg.selectAll(".link")
+      .style("stroke", "#999")
+      .style("stroke-opacity", 0.6)
+      .style("stroke-width", 2);
+
+    svg.selectAll("circle")
+      .style("fill", "steelblue");
+
+    svg.selectAll("text")
+      .style("fill", "black")
+      .style("font-family", "Arial");
+  </script>
+</body>
+
+</html>
