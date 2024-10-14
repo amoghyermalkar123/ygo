@@ -20,18 +20,22 @@ func NewDocument() *Document {
 
 // Integrate inserts a block into the document, handling conflict resolution.
 func (doc *Document) Integrate(block *Block) {
+	// TODO: offset adjustment of `block`
 	fmt.Println("Integrating block:", block)
 
 	// Find position based on origin
 	var left *Block
 	var right *Block
 
+	// setting up the block
 	for _, b := range doc.Blocks {
 		if block.Origin != nil && b.ID == *block.Origin {
 			left = b
 			right = b.Right
 		}
 	}
+
+	// Conflict Detection
 
 	// Conflict resolution by clientID
 	if right != nil && right.ID.Client < block.ID.Client {
