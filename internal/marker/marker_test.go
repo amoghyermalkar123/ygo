@@ -12,7 +12,7 @@ func TestAddAndFindMarker(t *testing.T) {
 	b := block.NewBlock(block.ID{Clock: 1, Client: 1}, "Hello")
 	ms.Add(b, 5)
 
-	m, err := ms.FindBlock(b, 5)
+	m, err := ms.FindMarker(5)
 	if err != nil {
 		t.Fatalf("expected to find marker, got error: %v", err)
 	}

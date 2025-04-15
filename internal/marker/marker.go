@@ -49,7 +49,7 @@ func (ms *MarkerSystem) Add(block *block.Block, pos uint64) {
 }
 
 // FindBlock returns the closest marker-based block at given pos.
-func (ms *MarkerSystem) FindMarker(start *block.Block, pos uint64) (Marker, error) {
+func (ms *MarkerSystem) FindMarker(pos uint64) (Marker, error) {
 	if len(ms.Markers) == 0 {
 		return Marker{}, ErrNoMarkers
 	}
