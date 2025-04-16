@@ -125,29 +125,34 @@ func (s *BlockStore) DeleteText(pos, length uint64) error {
 
 	s.Length -= int(length)
 
-	for length > 0 && marker.Block != nil {
-		if length < uint64(len(marker.Block.Content)) {
-			splitPoint := uint64(len(marker.Block.Content)) - length - 1
+	blk := marker.Block
+
+	for length > 0 && blk != nil {
+		if length < uint64(len(blk.Content)) {
+			splitPoint := uint64(len(blk.Content)) - length - 1
 
 			left := &block.Block{
 				ID:          block.ID{Client: CLIENT_ID, Clock: s.getNextClock()},
 				Content:     "",
-				Left:        marker.Block.Left,
-				LeftOrigin:  marker.Block.LeftOrigin,
-				RightOrigin: marker.Block.ID,
-				Right:       marker.Block,
+				Left:        blk.Left,
+				LeftOrigin:  blk.LeftOrigin,
+				RightOrigin: blk.ID,
+				Right:       blk,
 				IsDeleted:   true,
 			}
 
-			marker.Block.Content = marker.Block.Content[:splitPoint] + marker.Block.Content[length+1:]
-			marker.Block.Left = left
+			blk.Content = blk.Content[:splitPoint] + blk.Content[length+1:]
+			blk.Left = left
 			length = 0
+			// move ahead
+			blk = blk.Right
 			continue
 		}
-
-		length -= uint64(len(marker.Block.Content))
-		marker.Block.IsDeleted = true
-		marker.Block.Content = ""
+		length -= uint64(len(blk.Content))
+		blk.IsDeleted = true
+		blk.Content = ""
+		// move ahead
+		blk = blk.Right
 	}
 	return nil
 }
