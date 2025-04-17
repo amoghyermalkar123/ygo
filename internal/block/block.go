@@ -2,7 +2,7 @@ package block
 
 type ID struct {
 	Clock  uint64
-	Client uint64
+	Client int64
 }
 
 type Block struct {
@@ -24,14 +24,21 @@ func NewBlock(id ID, content string) *Block {
 	}
 }
 
-// AttachNeighbor links the block between left and right.
-func (b *Block) AttachNeighbor(left, right *Block) {
-	if left != nil {
-		left.Right = b
+func (b *Block) MarkDeleted() {
+	b.IsDeleted = true
+	b.Content = ""
+}
+
+type BlockTextListPosition struct {
+	Left  *Block
+	Right *Block
+	Index uint64
+}
+
+func (l *BlockTextListPosition) Forward() {
+	if !l.Right.IsDeleted {
+		l.Index += uint64(len(l.Right.Content))
 	}
-	if right != nil {
-		right.Left = b
-	}
-	b.Left = left
-	b.Right = right
+	l.Left = l.Right
+	l.Right = l.Right.Right
 }

@@ -76,28 +76,27 @@ func TestDeleteMiddleOfBlock(t *testing.T) {
 	}
 }
 
-// not passing
-// func TestDeleteMultipleBlocks(t *testing.T) {
-// 	store := NewStore()
-// 	_ = store.Insert(0, "Hi")
-// 	_ = store.Insert(2, " there") // "Hi th)
+func TestDeleteMultipleBlocks(t *testing.T) {
+	store := NewStore()
+	_ = store.Insert(0, "Hi")
+	_ = store.Insert(2, " there") // "Hi th)
 
-// 	err := store.DeleteText(1, 5) // Remove "i the"
-// 	if err != nil {
-// 		t.Fatalf("delete failed: %v", err)
-// 	}
-// 	if got := store.Content(); got != "Hre" {
-// 		t.Errorf("expected Hr, got %q", got)
-// 	}
-// }
+	err := store.DeleteText(1, 5) // Remove "i the"
+	if err != nil {
+		t.Fatalf("delete failed: %v", err)
+	}
+	if got := store.Content(); got != "Hre" {
+		t.Errorf("expected Hr, got %q", got)
+	}
+}
 
-// not passing
-// func TestDeleteOutOfBounds(t *testing.T) {
-// 	store := NewStore()
-// 	_ = store.Insert(0, "Yo")
+func TestDeleteOutOfBounds(t *testing.T) {
+	store := NewStore()
+	_ = store.Insert(0, "Yo")
 
-// 	err := store.DeleteText(3, 1)
-// 	if err == nil {
-// 		t.Fatal("expected error on out-of-bounds delete, got none")
-// 	}
-// }
+	err := store.DeleteText(3, 3)
+
+	if err == nil {
+		t.Fatal("expected error on out-of-bounds delete, got %w", err)
+	}
+}
