@@ -54,7 +54,7 @@ func TestDeleteSingleBlock(t *testing.T) {
 	store := NewStore()
 	_ = store.Insert(0, "A")
 
-	err := store.DeleteText(0, 1)
+	err := store.Delete(0, 1)
 	if err != nil {
 		t.Fatalf("delete failed: %v", err)
 	}
@@ -67,7 +67,7 @@ func TestDeleteMiddleOfBlock(t *testing.T) {
 	store := NewStore()
 	_ = store.Insert(0, "Hello")
 
-	err := store.DeleteText(1, 3) // Remove "ell"
+	err := store.Delete(1, 3) // Remove "ell"
 	if err != nil {
 		t.Fatalf("delete failed: %v", err)
 	}
@@ -81,7 +81,7 @@ func TestDeleteMultipleBlocks(t *testing.T) {
 	_ = store.Insert(0, "Hi")
 	_ = store.Insert(2, " there") // "Hi th)
 
-	err := store.DeleteText(1, 5) // Remove "i the"
+	err := store.Delete(1, 5) // Remove "i the"
 	if err != nil {
 		t.Fatalf("delete failed: %v", err)
 	}
@@ -94,7 +94,7 @@ func TestDeleteOutOfBounds(t *testing.T) {
 	store := NewStore()
 	_ = store.Insert(0, "Yo")
 
-	err := store.DeleteText(3, 3)
+	err := store.Delete(3, 3)
 
 	if err == nil {
 		t.Fatal("expected error on out-of-bounds delete, got %w", err)

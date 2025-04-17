@@ -17,7 +17,7 @@ func (yd *YDoc) InsertText(pos uint64, text string) error {
 }
 
 func (yd *YDoc) DeleteText(pos, length uint64) error {
-	return yd.blockStore.DeleteText(pos, length)
+	return yd.blockStore.Delete(pos, length)
 }
 
 func (yd *YDoc) Content() string {

@@ -113,8 +113,7 @@ func (s *BlockStore) Insert(pos uint64, content string) error {
 }
 
 // DeleteText marks text as deleted starting from `pos`, over `length` characters.
-// :)
-func (s *BlockStore) DeleteText(pos, length uint64) error {
+func (s *BlockStore) Delete(pos, length uint64) error {
 	if length > uint64(s.Length) {
 		return fmt.Errorf("delete length %d exceeds block store length %d", length, s.Length)
 	}
