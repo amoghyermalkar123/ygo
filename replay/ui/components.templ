@@ -1,0 +1,40 @@
+package replayui
+
+import (
+  "ygo/internal/block"
+	"fmt"
+)
+
+templ EventItem(event block.Event) {
+  <div class="event border p-2 mb-2 rounded">
+    <div class="text-sm font-semibold">Type: {string(event.Type)}</div>
+    <div class="text-xs text-gray-500">State Vector:</div>
+    <pre class="text-xs bg-gray-100 p-1">
+      for k, v := range event.StateVector {
+        Client {fmt.Sprintf("%d", k)}: Clock {fmt.Sprintf("%d", v)}
+      }
+    </pre>
+
+    <div class="mt-2">
+      for client, blocks := range event.BlocksByClient {
+        <div class="mb-1">
+          <div class="text-sm font-bold">Client {fmt.Sprintf("%d", client)}</div>
+          <ul class="ml-4">
+            for _, blk := range blocks {
+              <li>
+                {fmt.Sprintf("%s:%s", blk.ID.Client, blk.ID.Clock)} "{blk.Content}"
+                if blk.Deleted {
+                  <span class="text-red-600 text-xs">(deleted)</span>
+                }
+              </li>
+            }
+          </ul>
+        </div>
+      }
+    </div>
+  </div>
+}
+
+templ Empty() {
+  <div class="text-sm text-gray-400 italic">Replay reset. Start again.</div>
+}

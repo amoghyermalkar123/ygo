@@ -1,0 +1,22 @@
+package replayui
+
+
+templ ReplayPage() {
+  <html>
+    <head>
+      <title>CRDT Replay Viewer</title>
+      <script src="https://unpkg.com/htmx.org@1.9.2"></script>
+      <link rel="stylesheet" href="/static/style.css">
+    </head>
+    <body class="p-4 font-sans">
+      <h1 class="text-xl font-bold mb-4">CRDT Replay Debugger</h1>
+      <div class="mb-4 space-x-2">
+        <button hx-get="/replay/next" hx-target="#log" class="btn">⏭ Next</button>
+        <button hx-get="/replay/reset" hx-target="#log" class="btn">🔄 Reset</button>
+      </div>
+      <div id="log">
+        <p class="text-gray-500 italic">No event loaded yet.</p>
+      </div>
+    </body>
+  </html>
+}
