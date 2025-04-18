@@ -5,8 +5,17 @@ import (
 	"math/rand"
 	"ygo/internal/block"
 	markers "ygo/internal/marker"
+	"ygo/internal/replay"
 	"ygo/internal/utils"
 )
+
+type StoreOptions func(*BlockStore)
+
+func WithDebugModeEnabled() StoreOptions {
+	return func(s *BlockStore) {
+		s.logger = replay.NewLogger(true)
+	}
+}
 
 type BlockStore struct {
 	Start           *block.Block
@@ -16,16 +25,24 @@ type BlockStore struct {
 	StateVector     map[int64]uint64
 	MarkerSystem    *markers.MarkerSystem
 	CurrentClientID int64
+	logger          *replay.Logger
 }
 
 // NewStore initializes a new BlockStore.
-func NewStore() *BlockStore {
-	return &BlockStore{
+func NewStore(options ...StoreOptions) *BlockStore {
+	b := &BlockStore{
 		Blocks:          make(map[int64][]*block.Block),
 		StateVector:     make(map[int64]uint64),
 		MarkerSystem:    markers.NewSystem(),
 		CurrentClientID: rand.Int63(),
+		logger:          replay.NewLogger(false),
 	}
+
+	for _, option := range options {
+		option(b)
+	}
+
+	return b
 }
 
 func (s *BlockStore) getNextClock() uint64 {
@@ -109,6 +126,7 @@ func (s *BlockStore) Insert(pos uint64, content string) error {
 
 	s.Length += len(content)
 	s.Integrate(right)
+	s.logger.Capture(extractBlockMap(s.Blocks), copyStateVector(s.StateVector), block.Insert)
 	return nil
 }
 
@@ -346,4 +364,28 @@ func (s *BlockStore) splitBlock(left *block.Block, diff int) *block.Block {
 	// Insert new block into BlockStore
 	s.Blocks[right.ID.Client] = append(s.Blocks[right.ID.Client], right)
 	return right
+}
+
+func copyStateVector(original map[int64]uint64) map[int64]uint64 {
+	copied := make(map[int64]uint64)
+	for k, v := range original {
+		copied[k] = v
+	}
+	return copied
+}
+
+func extractBlockMap(original map[int64][]*block.Block) map[int64][]block.BlockSnapshot {
+	result := make(map[int64][]block.BlockSnapshot)
+	for clientID, blocks := range original {
+		for _, b := range blocks {
+			result[clientID] = append(result[clientID], block.BlockSnapshot{
+				ID:          b.ID,
+				Content:     b.Content,
+				Deleted:     b.IsDeleted,
+				LeftOrigin:  b.LeftOrigin,
+				RightOrigin: b.RightOrigin,
+			})
+		}
+	}
+	return result
 }

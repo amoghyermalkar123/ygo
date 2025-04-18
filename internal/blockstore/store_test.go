@@ -77,7 +77,7 @@ func TestDeleteMiddleOfBlock(t *testing.T) {
 }
 
 func TestDeleteMultipleBlocks(t *testing.T) {
-	store := NewStore()
+	store := NewStore(WithDebugModeEnabled())
 	_ = store.Insert(0, "Hi")
 	_ = store.Insert(2, " there") // "Hi th)
 
