@@ -29,7 +29,7 @@ func ReplayPage() templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<html><head><title>CRDT Replay Viewer</title><script src=\"https://unpkg.com/htmx.org@1.9.2\"></script><link rel=\"stylesheet\" href=\"/static/style.css\"></head><body class=\"p-4 font-sans\"><h1 class=\"text-xl font-bold mb-4\">CRDT Replay Debugger</h1><div class=\"mb-4 space-x-2\"><button hx-get=\"/replay/next\" hx-target=\"#log\" class=\"btn\">⏭ Next</button> <button hx-get=\"/replay/reset\" hx-target=\"#log\" class=\"btn\">🔄 Reset</button></div><div id=\"log\"><p class=\"text-gray-500 italic\">No event loaded yet.</p><div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<html><head><title>CRDT Replay Viewer</title><script src=\"https://unpkg.com/htmx.org@1.9.2\"></script><script src=\"https://unpkg.com/alpinejs\" defer></script><script src=\"https://cdn.tailwindcss.com\"></script><link rel=\"stylesheet\" href=\"/static/style.css\"></head><body class=\"p-4 font-sans\"><h1 class=\"text-xl font-bold mb-4\">CRDT Replay Debugger</h1><div class=\"mb-4 space-x-2\"><button hx-get=\"/replay/next\" hx-target=\"#log\" class=\"btn\">⏭ Next</button> <button hx-get=\"/replay/reset\" hx-target=\"#log\" class=\"btn\">🔄 Reset</button></div><div id=\"log\"><p class=\"text-gray-500 italic\">No event loaded yet.</p><div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
