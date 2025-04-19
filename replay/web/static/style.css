@@ -1,13 +1,92 @@
+/* General */
 body {
-  font-family: sans-serif;
+  font-family: 'Segoe UI', sans-serif;
+  background-color: #f9fafb;
+  color: #333;
+  margin: 0;
+  padding: 2rem;
 }
+
+/* Buttons */
 .btn {
-  padding: 6px 12px;
-  background-color: #eee;
+  padding: 8px 14px;
+  border: none;
   border-radius: 6px;
-  border: 1px solid #ccc;
+  background-color: #e0f2f1;
+  color: #00695c;
+  font-weight: 600;
   cursor: pointer;
+  transition: background-color 0.2s ease;
 }
+
 .btn:hover {
-  background-color: #ddd;
+  background-color: #b2dfdb;
+}
+
+/* Headings */
+h1 {
+  font-size: 1.5rem;
+  color: #2c3e50;
+}
+
+/* Event panel */
+.event {
+  background-color: #ffffff;
+  border: 1px solid #dfe6e9;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  border-radius: 8px;
+}
+
+/* Block view */
+.block-view {
+  background-color: #ffffff;
+  padding: 1rem;
+  border: 1px solid #e1e1e1;
+  border-radius: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.block {
+  background-color: #f1f8e9;
+  border: 1px solid #c5e1a5;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-family: monospace;
+  white-space: nowrap;
+}
+
+/* Deleted blocks */
+.block span.text-red-600 {
+  color: #e57373;
+}
+
+/* State vector */
+.state-vector-view {
+  background-color: #fff3e0;
+  border: 1px solid #ffcc80;
+  border-radius: 8px;
+  padding: 1rem;
+  font-size: 0.875rem;
+}
+
+.state-vector-view ul {
+  list-style: none;
+  padding-left: 0;
+}
+
+.state-vector-view li {
+  margin-bottom: 0.25rem;
+}
+
+/* Misc */
+pre {
+  background-color: #eceff1;
+  padding: 0.5rem;
+  border-radius: 4px;
+  overflow-x: auto;
+  font-size: 0.75rem;
 }

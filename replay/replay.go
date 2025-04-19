@@ -20,6 +20,8 @@ func StartReplayEngine(mux *http.ServeMux) {
 
 	playback := NewPlayback(events)
 
+	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("replay/web/static"))))
+
 	mux.HandleFunc("/replay", func(w http.ResponseWriter, r *http.Request) {
 		replayui.ReplayPage().Render(r.Context(), w)
 	})
