@@ -30,7 +30,9 @@ func TestInsertAtEnd(t *testing.T) {
 }
 
 func TestInsertInMiddle(t *testing.T) {
-	store := NewStore()
+	store := NewStore(WithDebugModeEnabled())
+	defer store.logger.Flush()
+
 	_ = store.Insert(0, "A")
 	_ = store.Insert(1, "B")
 	_ = store.Insert(1, "X") // Insert in middle →)

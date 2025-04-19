@@ -22,7 +22,7 @@ templ EventItem(event block.Event) {
           <ul class="ml-4">
             for _, blk := range blocks {
               <li>
-                {fmt.Sprintf("%s:%s", blk.ID.Client, blk.ID.Clock)} "{blk.Content}"
+               [ {fmt.Sprintf("%d:%d", blk.ID.Client, blk.ID.Clock)}] "{blk.Content}"
                 if blk.Deleted {
                   <span class="text-red-600 text-xs">(deleted)</span>
                 }
@@ -37,4 +37,51 @@ templ EventItem(event block.Event) {
 
 templ Empty() {
   <div class="text-sm text-gray-400 italic">Replay reset. Start again.</div>
+}
+
+// Renders a single block in the block store.
+templ BlockView(blocksByClient map[int64][]block.BlockSnapshot) {
+  <div class="block-view flex flex-wrap gap-2 p-2 border rounded mb-4">
+    for _, blocks := range blocksByClient {
+      for _, blk := range blocks {
+        <div class="block px-2 py-1 border rounded text-sm">
+          <div class="font-mono text-xs">[{fmt.Sprintf("%d:%d", blk.ID.Client, blk.ID.Clock)}]</div>
+          <div>
+            "{blk.Content}" 
+            if blk.Deleted {
+              <span class="text-red-600 text-xs">(deleted)</span>
+            }
+          </div>
+        </div>
+      }
+    }
+  </div>
+}
+
+// Renders the state vector.
+templ StateVectorView(stateVector map[int64]uint64) {
+  <div class="state-vector-view p-2 border rounded mb-4">
+    <h2 class="text-sm font-bold mb-1">State Vector</h2>
+    <ul class="text-xs font-mono">
+      for client, clock := range stateVector {
+        <li>Client {fmt.Sprintf("%d:%d", client, clock)}</li>
+      }
+    </ul>
+  </div>
+}
+
+templ FullReplayPage(evt block.Event) {
+  <div>
+    <div class="flex gap-4">
+      <div class="w-2/3">
+        @BlockView(evt.BlocksByClient)
+      </div>
+      <div class="w-1/3">
+        @StateVectorView(evt.StateVector)
+      </div>
+    </div>
+    <div class="mt-4">
+      @EventItem(evt)
+    </div>
+  </div>
 }
