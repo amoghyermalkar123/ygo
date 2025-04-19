@@ -2,7 +2,9 @@ package blockstore
 
 import (
 	"fmt"
+	"log/slog"
 	"math/rand"
+	"sort"
 	"ygo/internal/block"
 	markers "ygo/internal/marker"
 	"ygo/internal/replay"
@@ -88,8 +90,9 @@ func (s *BlockStore) Insert(pos uint64, content string) error {
 			IsDeleted:   false,
 		}
 		s.MarkerSystem.Add(s.Start, 0)
-		s.Blocks[s.CurrentClientID] = append(s.Blocks[s.CurrentClientID], s.Start)
+		s.addBlock(s.Start)
 		s.Length += len(content)
+		s.logger.LogInsert("", slog.Any("block", s.Start))
 		return nil
 	}
 
@@ -97,6 +100,8 @@ func (s *BlockStore) Insert(pos uint64, content string) error {
 	if err != nil {
 		return fmt.Errorf("find marker: %w", err)
 	}
+
+	s.logger.LogMarker("", slog.Any("marker", marker))
 
 	right := &block.Block{
 		ID:          block.ID{Client: s.CurrentClientID, Clock: s.getNextClock()},
@@ -106,27 +111,20 @@ func (s *BlockStore) Insert(pos uint64, content string) error {
 		RightOrigin: marker.Block.RightOrigin,
 		IsDeleted:   false,
 	}
-
-	if pos > marker.Pos && pos < uint64(len(marker.Block.Content)) {
-		splitPoint := uint64(len(marker.Block.Content)) - pos - 1
-
-		right := &block.Block{
-			ID:          block.ID{Client: s.CurrentClientID, Clock: s.getNextClock()},
-			Content:     marker.Block.Content[splitPoint:],
-			Left:        marker.Block,
-			LeftOrigin:  marker.Block.ID,
-			RightOrigin: marker.Block.RightOrigin,
-			Right:       marker.Block.Right,
-			IsDeleted:   false,
-		}
-
-		marker.Block.Content = marker.Block.Content[:splitPoint]
-		marker.Block.Right = right
+	// find the correct position
+	blockPos, err := s.findPositionForNewBlock(pos)
+	if err != nil {
+		return fmt.Errorf("find position for new block: %w", err)
 	}
 
 	s.Length += len(content)
+
 	s.Integrate(right)
-	s.logger.Capture(extractBlockMap(s.Blocks), copyStateVector(s.StateVector), block.Insert)
+
+	blockPos.Right = right
+
+	s.logger.LogInsert("", slog.Any("block", right))
+
 	return nil
 }
 
@@ -143,7 +141,6 @@ func (s *BlockStore) Delete(pos, length uint64) error {
 
 	// traverse and delete the blocks until `length` is deleted from blockstore
 	for length > 0 && blockPos.Right != nil {
-		// :) infinite loop
 		if length < uint64(len(blockPos.Right.Content)) {
 			s.getItemCleanStart(block.ID{
 				Client: blockPos.Right.ID.Client,
@@ -170,6 +167,8 @@ func (s *BlockStore) Integrate(newBlk *block.Block) {
 		(newBlk.Right == nil || newBlk.Right.Left == nil)) ||
 		(newBlk.Left != nil && newBlk.Left.Right != newBlk.Right) {
 
+		s.logger.LogIntegrate("conflict detected")
+
 		// this is the left pointer. We will find the best
 		// left neighbor for the remote block by traversing
 		// the block store from the start to the right
@@ -177,6 +176,8 @@ func (s *BlockStore) Integrate(newBlk *block.Block) {
 		// which does not conflict with the remote block
 		var left *block.Block
 		left = newBlk.Left
+
+		s.logger.LogIntegrate("", slog.Any("left ptr", left))
 
 		// Find the first conflict candidate
 		o := s.Start
@@ -189,6 +190,7 @@ func (s *BlockStore) Integrate(newBlk *block.Block) {
 		seenBefore := map[block.ID]bool{}
 		// conflict resolution logic
 		for o != nil && o != newBlk.Right {
+			s.logger.LogIntegrate("", slog.Any("conflicting item", o))
 			// very first thing, add this to the conflicting block set
 			// and the seenBefore block set. They are cleared once
 			// conflicts are resolved and the appropriate `left` is found
@@ -244,6 +246,7 @@ func (s *BlockStore) Integrate(newBlk *block.Block) {
 	if newBlk.Right != nil {
 		newBlk.Right.Left = newBlk
 	}
+	s.logger.LogIntegrate("neighbor found", slog.Any("left", newBlk.Left), slog.Any("right", newBlk.Right))
 	// add the block to the block store now
 	s.Blocks[newBlk.ID.Client] = append(s.Blocks[newBlk.ID.Client], newBlk)
 	// update our state vector
@@ -260,6 +263,22 @@ func (s *BlockStore) Content() string {
 		curr = curr.Right
 	}
 	return content
+}
+
+func (s *BlockStore) addBlock(blk *block.Block) {
+	blocks := s.Blocks[blk.ID.Client]
+
+	n := len(blocks)
+	i := sort.Search(n, func(i int) bool {
+		return blocks[i].ID.Clock > blk.ID.Clock
+	})
+
+	blocks = append(blocks, nil)
+	copy(blocks[i+1:], blocks[i:])
+
+	blocks[i] = blk
+
+	s.Blocks[blk.ID.Client] = blocks
 }
 
 // find the next appropriate position for integrating a new block
@@ -362,30 +381,6 @@ func (s *BlockStore) splitBlock(left *block.Block, diff int) *block.Block {
 	}
 
 	// Insert new block into BlockStore
-	s.Blocks[right.ID.Client] = append(s.Blocks[right.ID.Client], right)
+	s.addBlock(right)
 	return right
-}
-
-func copyStateVector(original map[int64]uint64) map[int64]uint64 {
-	copied := make(map[int64]uint64)
-	for k, v := range original {
-		copied[k] = v
-	}
-	return copied
-}
-
-func extractBlockMap(original map[int64][]*block.Block) map[int64][]block.BlockSnapshot {
-	result := make(map[int64][]block.BlockSnapshot)
-	for clientID, blocks := range original {
-		for _, b := range blocks {
-			result[clientID] = append(result[clientID], block.BlockSnapshot{
-				ID:          b.ID,
-				Content:     b.Content,
-				Deleted:     b.IsDeleted,
-				LeftOrigin:  b.LeftOrigin,
-				RightOrigin: b.RightOrigin,
-			})
-		}
-	}
-	return result
 }

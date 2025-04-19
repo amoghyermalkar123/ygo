@@ -42,6 +42,7 @@ func TestInsertInMiddle(t *testing.T) {
 	}
 }
 
+// :)
 func TestInsertTriggersSplit(t *testing.T) {
 	store := NewStore()
 	_ = store.Insert(0, "World")
@@ -80,6 +81,8 @@ func TestDeleteMiddleOfBlock(t *testing.T) {
 
 func TestDeleteMultipleBlocks(t *testing.T) {
 	store := NewStore(WithDebugModeEnabled())
+	defer store.logger.Flush()
+
 	_ = store.Insert(0, "Hi")
 	_ = store.Insert(2, " there") // "Hi th)
 

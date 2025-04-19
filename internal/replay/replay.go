@@ -3,6 +3,7 @@ package replay
 import (
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"os"
 	"sync"
 	"time"
@@ -22,9 +23,27 @@ func NewLogger(debugMode bool) *Logger {
 	}
 }
 
-// Capture stores the event in the logger if debug mode is enabled.
-// It's a no-op if debug mode is disabled.
-func (l *Logger) Capture(store map[int64][]block.BlockSnapshot, sv map[int64]uint64, typ block.EventType) {
+func (l *Logger) LogIntegrate(msg string, params ...slog.Attr) {
+	l.logEvent(block.Integrate, params...)
+}
+
+func (l *Logger) LogInsert(msg string, params ...slog.Attr) {
+	l.logEvent(block.Insert, params...)
+
+}
+func (l *Logger) LogDelete(msg string, params ...slog.Attr) {
+	l.logEvent(block.Delete, params...)
+
+}
+func (l *Logger) LogSplit(msg string, params ...slog.Attr) {
+	l.logEvent(block.Split, params...)
+
+}
+func (l *Logger) LogMarker(msg string, params ...slog.Attr) {
+	l.logEvent(block.Marker, params...)
+}
+
+func (l *Logger) logEvent(op block.EventType, params ...slog.Attr) {
 	if !l.debugMode {
 		return
 	}
@@ -33,9 +52,8 @@ func (l *Logger) Capture(store map[int64][]block.BlockSnapshot, sv map[int64]uin
 	defer l.mu.Unlock()
 
 	event := block.Event{
-		Type:           typ,
-		StateVector:    sv,
-		BlocksByClient: store,
+		Type:   op,
+		Points: params,
 	}
 
 	l.events = append(l.events, event)

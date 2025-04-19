@@ -1,6 +1,6 @@
 package block
 
-import "time"
+import "log/slog"
 
 type EventType string
 
@@ -8,6 +8,8 @@ const (
 	Insert    EventType = "insert"
 	Delete    EventType = "delete"
 	Integrate EventType = "integrate"
+	Split     EventType = "split"
+	Marker    EventType = "marker"
 )
 
 type BlockSnapshot struct {
@@ -20,8 +22,7 @@ type BlockSnapshot struct {
 
 type Event struct {
 	Type           EventType                 `json:"type"`
-	Timestamp      time.Time                 `json:"timestamp"`
-	Length         int                       `json:"length"`
-	StateVector    map[int64]uint64          `json:"state_vector"`
-	BlocksByClient map[int64][]BlockSnapshot `json:"blocks"`
+	StateVector    map[int64]uint64          `json:"state_vector,omitempty"`
+	BlocksByClient map[int64][]BlockSnapshot `json:"blocks,omitempty"`
+	Points         []slog.Attr               `json:"points,omitempty"`
 }

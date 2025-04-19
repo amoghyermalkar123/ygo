@@ -6,10 +6,9 @@ type ID struct {
 }
 
 type Block struct {
-	ID        ID
-	Content   string
-	IsDeleted bool
-
+	ID          ID
+	Content     string
+	IsDeleted   bool
 	LeftOrigin  ID
 	RightOrigin ID
 	Left        *Block
