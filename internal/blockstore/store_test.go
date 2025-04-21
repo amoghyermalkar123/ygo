@@ -30,8 +30,7 @@ func TestInsertAtEnd(t *testing.T) {
 }
 
 func TestInsertInMiddle(t *testing.T) {
-	store := NewStore(WithDebugModeEnabled())
-	defer store.logger.Flush()
+	store := NewStore()
 
 	_ = store.Insert(0, "A")
 	_ = store.Insert(1, "B")
@@ -68,6 +67,7 @@ func TestDeleteSingleBlock(t *testing.T) {
 
 func TestDeleteMiddleOfBlock(t *testing.T) {
 	store := NewStore()
+
 	_ = store.Insert(0, "Hello")
 
 	err := store.Delete(1, 3) // Remove "ell"
@@ -80,8 +80,7 @@ func TestDeleteMiddleOfBlock(t *testing.T) {
 }
 
 func TestDeleteMultipleBlocks(t *testing.T) {
-	store := NewStore(WithDebugModeEnabled())
-	defer store.logger.Flush()
+	store := NewStore()
 
 	_ = store.Insert(0, "Hi")
 	_ = store.Insert(2, " there") // "Hi th)
