@@ -12,8 +12,7 @@ import (
 type StoreOptions func(*BlockStore)
 
 func WithDebugModeEnabled() StoreOptions {
-	return func(s *BlockStore) {
-	}
+	return func(s *BlockStore) {}
 }
 
 type BlockStore struct {
@@ -45,6 +44,11 @@ func NewStore(options ...StoreOptions) *BlockStore {
 func (s *BlockStore) getNextClock() uint64 {
 	s.Clock++
 	return s.Clock
+}
+
+func (s *BlockStore) adjustLength(content string) {
+	s.Length += len(content)
+
 }
 
 func (s *BlockStore) updateState(block *block.Block) {
@@ -86,7 +90,7 @@ func (s *BlockStore) Insert(pos uint64, content string) error {
 		}
 		s.MarkerSystem.Add(s.Start, 0)
 		s.addBlock(s.Start)
-		s.Length += len(content)
+		s.adjustLength(content)
 		return nil
 	}
 
@@ -95,8 +99,6 @@ func (s *BlockStore) Insert(pos uint64, content string) error {
 	if err != nil {
 		return fmt.Errorf("find position for new block: %w", err)
 	}
-
-	s.Length += len(content)
 
 	right := &block.Block{
 		ID:         block.ID{Client: s.CurrentClientID, Clock: s.getNextClock()},
@@ -114,6 +116,8 @@ func (s *BlockStore) Insert(pos uint64, content string) error {
 	s.Integrate(right)
 
 	blockPos.Right = right
+
+	s.adjustLength(content)
 
 	return nil
 }
@@ -147,7 +151,6 @@ func (s *BlockStore) Delete(pos, length uint64) error {
 // Integrate integrates a remote block into the local block store.
 // Core logic for CRDT convergence and conflict resolution.
 func (s *BlockStore) Integrate(newBlk *block.Block) {
-
 	// the whole purpose of this branch
 	// is to detect conflict and find the perfect left neighbor for `newBlk`
 	// this means what we find is a perfect conflict-free position
