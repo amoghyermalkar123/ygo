@@ -90,19 +90,6 @@ func (s *BlockStore) Insert(pos uint64, content string) error {
 		return nil
 	}
 
-	marker, err := s.MarkerSystem.FindMarker(pos)
-	if err != nil {
-		return fmt.Errorf("find marker: %w", err)
-	}
-
-	right := &block.Block{
-		ID:          block.ID{Client: s.CurrentClientID, Clock: s.getNextClock()},
-		Content:     content,
-		Left:        marker.Block,
-		LeftOrigin:  marker.Block.ID,
-		RightOrigin: marker.Block.RightOrigin,
-		IsDeleted:   false,
-	}
 	// find the correct position
 	blockPos, err := s.findPositionForNewBlock(pos)
 	if err != nil {
@@ -110,6 +97,19 @@ func (s *BlockStore) Insert(pos uint64, content string) error {
 	}
 
 	s.Length += len(content)
+
+	right := &block.Block{
+		ID:         block.ID{Client: s.CurrentClientID, Clock: s.getNextClock()},
+		Content:    content,
+		Left:       blockPos.Left,
+		LeftOrigin: blockPos.Left.ID,
+		IsDeleted:  false,
+	}
+
+	if blockPos.Right != nil {
+		right.RightOrigin = blockPos.Right.ID
+		right.Right = blockPos.Right
+	}
 
 	s.Integrate(right)
 

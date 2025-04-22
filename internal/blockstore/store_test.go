@@ -41,7 +41,6 @@ func TestInsertInMiddle(t *testing.T) {
 	}
 }
 
-// :)
 func TestInsertTriggersSplit(t *testing.T) {
 	store := NewStore()
 	_ = store.Insert(0, "World")
