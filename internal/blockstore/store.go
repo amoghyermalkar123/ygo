@@ -64,6 +64,10 @@ func (s *BlockStore) GetState(client int64) uint64 {
 	return s.StateVector[client]
 }
 
+func (s *BlockStore) GetCurrentClient() int64 {
+	return s.CurrentClientID
+}
+
 func (s *BlockStore) GetMissing(blk *block.Block) *int64 {
 	check := func(origin block.ID) *int64 {
 		if (origin != block.ID{} && origin.Client != blk.ID.Client && origin.Clock > s.GetState(origin.Client)) {

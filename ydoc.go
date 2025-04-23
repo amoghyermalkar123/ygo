@@ -1,6 +1,7 @@
 package ygo
 
 import (
+	"encoding/json"
 	"fmt"
 	"ygo/internal/block"
 	"ygo/internal/blockstore"
@@ -15,6 +16,10 @@ func NewYDoc() *YDoc {
 	return &YDoc{
 		blockStore: blockstore.NewStore(),
 	}
+}
+
+func (yd *YDoc) Client() int64 {
+	return yd.blockStore.GetCurrentClient()
 }
 
 func (yd *YDoc) InsertText(pos uint64, text string) error {
@@ -37,6 +42,7 @@ func (yd *YDoc) ApplyUpdate(data []byte) error {
 		return fmt.Errorf("decode update: %w", err)
 	}
 
+	fmt.Println("Decoded update:", update)
 	// Step 2: Integrate the blocks from remote clients
 	yd.processUpdates(&update.Updates)
 
@@ -235,4 +241,54 @@ func (yd *YDoc) processPendingUpdates() {
 
 	// Update the pending updates list
 	yd.blockStore.SetPendingUpdates(newPendingUpdates)
+}
+
+// EncodeStateAsUpdate encodes the current document state as an update message
+// that can be applied to other YDoc instances
+func (yd *YDoc) EncodeStateAsUpdate() ([]byte, error) {
+	// Create an update message containing all blocks in the store
+	updates := make(map[int64][]*block.Block)
+
+	// Process each client's blocks
+	for clientID, blocks := range yd.blockStore.Blocks {
+		// Deep copy blocks to avoid modifying the original store
+		clientBlocks := make([]*block.Block, len(blocks))
+		for i, b := range blocks {
+			// Copy only the block data, not the references
+			clientBlocks[i] = &block.Block{
+				ID:          b.ID,
+				Content:     b.Content,
+				IsDeleted:   b.IsDeleted,
+				LeftOrigin:  b.LeftOrigin,
+				RightOrigin: b.RightOrigin,
+				// Leave Left and Right as nil since they're references
+			}
+		}
+		updates[clientID] = clientBlocks
+	}
+
+	// Create the update message
+	updateMsg := block.Updates{
+		Updates: block.Update{
+			Updates: updates,
+		},
+		// We don't need to include deletions for a full state update
+		Deletes: block.DeleteUpdate{
+			NumClients:    0,
+			ClientDeletes: []block.ClientDeletes{},
+		},
+	}
+
+	// Marshal the update message
+	return json.Marshal(updateMsg)
+}
+
+// EncodeStateVector returns the current state vector as a map of client IDs to clocks
+func (yd *YDoc) EncodeStateVector() map[int64]uint64 {
+	// Return a copy of the state vector
+	stateVector := make(map[int64]uint64)
+	for clientID, clock := range yd.blockStore.StateVector {
+		stateVector[clientID] = clock
+	}
+	return stateVector
 }
