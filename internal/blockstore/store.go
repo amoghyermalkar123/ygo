@@ -23,6 +23,8 @@ type BlockStore struct {
 	StateVector     map[int64]uint64
 	MarkerSystem    *markers.MarkerSystem
 	CurrentClientID int64
+	pendingUpdates  []*block.Update
+	pendingDeletes  []*block.DeleteUpdate
 }
 
 // NewStore initializes a new BlockStore.
@@ -323,11 +325,11 @@ func (s *BlockStore) getItemCleanStart(id block.ID) *block.Block {
 }
 
 func (s *BlockStore) findIndexCleanStart(blocks []*block.Block, id block.ID) int {
-	index := s.findIndexInStructStore(blocks, id)
+	index := s.FindIndexInBlockArrayByID(blocks, id)
 	blk := blocks[index]
 
 	if blk.ID.Clock <= id.Clock {
-		s.splitBlock(blk, int(id.Clock)-int(blk.ID.Clock))
+		s.SplitBlock(blk, int(id.Clock)-int(blk.ID.Clock))
 		// because we split the block, we deal with the right of the blk
 		// which is the new block and hence we return index + 1
 		return index + 1
@@ -336,18 +338,19 @@ func (s *BlockStore) findIndexCleanStart(blocks []*block.Block, id block.ID) int
 	panic(fmt.Sprintf("getItemCleanStart: no block found for ID %v", id))
 }
 
-func (s *BlockStore) findIndexInStructStore(blocks []*block.Block, id block.ID) int {
+// equivalent to findIndexSS from yjs
+func (s *BlockStore) FindIndexInBlockArrayByID(blocks []*block.Block, id block.ID) int {
 	for i, blk := range blocks {
 		if blk.ID.Clock == id.Clock || id.Clock < blk.ID.Clock+uint64(len(blk.Content)) {
 			return i
 		}
 	}
-	panic(fmt.Sprintf("findIndexInStructStore: no exact match for ID %v", id))
+	panic(fmt.Sprintf("findIndexInBlockArrayByID: no exact match for ID %v", id))
 }
 
-func (s *BlockStore) splitBlock(left *block.Block, diff int) *block.Block {
+func (s *BlockStore) SplitBlock(left *block.Block, diff int) *block.Block {
 	if diff <= 0 || diff >= len(left.Content) {
-		panic(fmt.Sprintf("splitBlock: invalid split position %d in block with length %d", diff, len(left.Content)))
+		panic(fmt.Sprintf("SplitBlock: invalid split position %d in block with length %d", diff, len(left.Content)))
 	}
 
 	// Create the right block
@@ -373,4 +376,84 @@ func (s *BlockStore) splitBlock(left *block.Block, diff int) *block.Block {
 	// Insert new block into BlockStore
 	s.addBlock(right)
 	return right
+}
+
+// internal/blockstore/store.go
+
+// HasBlock checks if a block with the given ID exists in the store
+func (s *BlockStore) HasBlock(id block.ID) bool {
+	blocks, ok := s.Blocks[id.Client]
+	if !ok {
+		return false
+	}
+
+	for _, b := range blocks {
+		if b.ID.Clock == id.Clock {
+			return true
+		}
+	}
+	return false
+}
+
+// GetBlockByID retrieves a block by its ID
+func (s *BlockStore) GetBlockByID(id block.ID) *block.Block {
+	blocks, ok := s.Blocks[id.Client]
+	if !ok {
+		return nil
+	}
+
+	for _, b := range blocks {
+		if b.ID.Clock == id.Clock {
+			return b
+		}
+	}
+	return nil
+}
+
+// GetBlocksInRange returns blocks from a specific client within a clock range
+func (s *BlockStore) GetBlocksInRange(client int64, startClock int64, length int64) []*block.Block {
+	var result []*block.Block
+	blocks, ok := s.Blocks[client]
+	if !ok {
+		return result
+	}
+
+	endClock := startClock + length
+
+	for _, b := range blocks {
+		if b.ID.Clock >= uint64(startClock) && b.ID.Clock < uint64(endClock) {
+			result = append(result, b)
+		}
+	}
+	return result
+}
+
+// AddPendingUpdate adds an update to the pending queue
+func (s *BlockStore) AddPendingUpdate(update *block.Update) {
+	s.pendingUpdates = append(s.pendingUpdates, update)
+}
+
+// GetPendingUpdates returns the current pending updates
+func (s *BlockStore) GetPendingUpdates() []*block.Update {
+	return s.pendingUpdates
+}
+
+// SetPendingUpdates replaces the pending updates list
+func (s *BlockStore) SetPendingUpdates(updates []*block.Update) {
+	s.pendingUpdates = updates
+}
+
+// AddPendingDelete adds a delete operation to the pending queue
+func (s *BlockStore) AddPendingDelete(del *block.DeleteUpdate) {
+	s.pendingDeletes = append(s.pendingDeletes, del)
+}
+
+// GetPendingDeletes returns the current pending deletes
+func (s *BlockStore) GetPendingDeletes() []*block.DeleteUpdate {
+	return s.pendingDeletes
+}
+
+// SetPendingDeletes replaces the pending deletes list
+func (s *BlockStore) SetPendingDeletes(deletes []*block.DeleteUpdate) {
+	s.pendingDeletes = deletes
 }
