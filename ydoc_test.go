@@ -595,3 +595,102 @@ func TestApplyUpdate_MergeMultipleUpdates(t *testing.T) {
 	assert.Contains(t, content, "World")
 	assert.Contains(t, content, "Testing!")
 }
+
+// TestMultipleDeletionSynchronization tests synchronizing multiple deletion operations
+func TestMultipleDeletionSynchronization(t *testing.T) {
+	// Create two docs
+	source := ygo.NewYDoc()
+	target := ygo.NewYDoc()
+
+	// Add initial content to source
+	err := source.InsertText(0, "The quick brown fox jumps over the lazy dog")
+	require.NoError(t, err)
+
+	// Synchronize the initial state to target
+	update1, err := source.EncodeStateAsUpdate()
+	require.NoError(t, err)
+	err = target.ApplyUpdate(update1)
+	require.NoError(t, err)
+
+	// Perform multiple deletions in source
+	err = source.DeleteText(4, 6) // Delete "quick "
+	require.NoError(t, err)
+	err = source.DeleteText(10, 4) // Delete "fox "
+	require.NoError(t, err)
+	err = source.DeleteText(20, 9) // Delete "the lazy "
+	require.NoError(t, err)
+
+	// Verify source content
+	assert.Equal(t, "The brown jumps over dog", source.Content())
+
+	// Create update with deletions
+	update2, err := source.EncodeStateAsUpdate()
+	require.NoError(t, err)
+
+	// Apply to target
+	err = target.ApplyUpdate(update2)
+	require.NoError(t, err)
+
+	// Verify target content now matches source
+	assert.Equal(t, source.Content(), target.Content())
+}
+
+// TestConcurrentDeletionSynchronization tests sync of concurrent delete operations
+func TestConcurrentDeletionSynchronization(t *testing.T) {
+	// Create three docs
+	doc1 := ygo.NewYDoc()
+	doc2 := ygo.NewYDoc()
+	doc3 := ygo.NewYDoc()
+
+	// Add initial content to doc1
+	err := doc1.InsertText(0, "ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+	require.NoError(t, err)
+
+	// Synchronize to doc2 and doc3
+	initialUpdate, err := doc1.EncodeStateAsUpdate()
+	require.NoError(t, err)
+
+	err = doc2.ApplyUpdate(initialUpdate)
+	require.NoError(t, err)
+
+	err = doc3.ApplyUpdate(initialUpdate)
+	require.NoError(t, err)
+
+	// Doc2 deletes "DEFG"
+	err = doc2.DeleteText(3, 4)
+	require.NoError(t, err)
+	assert.Equal(t, "ABCHIJKLMNOPQRSTUVWXYZ", doc2.Content())
+
+	// Doc3 deletes "JKLM"
+	err = doc3.DeleteText(9, 4)
+	require.NoError(t, err)
+	assert.Equal(t, "ABCDEFGHINOPQRSTUVWXYZ", doc3.Content())
+
+	// Create updates from both docs
+	update2, err := doc2.EncodeStateAsUpdate()
+	require.NoError(t, err)
+
+	update3, err := doc3.EncodeStateAsUpdate()
+	require.NoError(t, err)
+
+	// Apply both updates to doc1
+	err = doc1.ApplyUpdate(update2)
+	require.NoError(t, err)
+
+	err = doc1.ApplyUpdate(update3)
+	require.NoError(t, err)
+
+	// Verify doc1 has both deletions applied
+	assert.Equal(t, "ABCHINOPQRSTUVWXYZ", doc1.Content())
+
+	// Apply the updates to the other docs as well to verify convergence
+	err = doc2.ApplyUpdate(update3)
+	require.NoError(t, err)
+
+	err = doc3.ApplyUpdate(update2)
+	require.NoError(t, err)
+
+	// Verify all docs converged to the same state
+	assert.Equal(t, doc1.Content(), doc2.Content())
+	assert.Equal(t, doc1.Content(), doc3.Content())
+}
