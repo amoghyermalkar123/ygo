@@ -24,7 +24,7 @@ const (
 
 type Marker struct {
 	Block     *block.Block
-	Pos       uint64
+	Pos       int64
 	Timestamp int64
 }
 
@@ -40,7 +40,7 @@ func NewSystem() *MarkerSystem {
 }
 
 // Add creates a new marker for a given block at position.
-func (ms *MarkerSystem) Add(block *block.Block, pos uint64) {
+func (ms *MarkerSystem) Add(block *block.Block, pos int64) {
 	ms.Markers = append(ms.Markers, Marker{
 		Block:     block,
 		Pos:       pos,
@@ -49,7 +49,7 @@ func (ms *MarkerSystem) Add(block *block.Block, pos uint64) {
 }
 
 // FindBlock returns the closest marker-based block at given pos.
-func (ms *MarkerSystem) FindMarker(pos uint64) (Marker, error) {
+func (ms *MarkerSystem) FindMarker(pos int64) (Marker, error) {
 	if len(ms.Markers) == 0 {
 		return Marker{}, ErrNoMarkers
 	}
@@ -78,7 +78,7 @@ func (ms *MarkerSystem) FindMarker(pos uint64) (Marker, error) {
 			break
 		}
 		b = b.Right
-		p += uint64(len(b.Content))
+		p += int64(len(b.Content))
 	}
 
 	// iterate left
@@ -96,7 +96,7 @@ func (ms *MarkerSystem) FindMarker(pos uint64) (Marker, error) {
 			break
 		}
 		b = b.Left
-		p += uint64(len(b.Content))
+		p += int64(len(b.Content))
 	}
 
 	final := Marker{
@@ -109,7 +109,7 @@ func (ms *MarkerSystem) FindMarker(pos uint64) (Marker, error) {
 }
 
 // UpdateMarkers adjusts marker positions after add/delete ops
-func (ms *MarkerSystem) UpdateMarkers(pos uint64, delta uint64, op OpType) {
+func (ms *MarkerSystem) UpdateMarkers(pos int64, delta int64, op OpType) {
 	for i := range ms.Markers {
 		if ms.Markers[i].Pos >= pos {
 			switch op {
@@ -124,7 +124,7 @@ func (ms *MarkerSystem) UpdateMarkers(pos uint64, delta uint64, op OpType) {
 }
 
 // DeleteMarkerAt removes a marker by its position.
-func (ms *MarkerSystem) DeleteMarkerAt(pos uint64) {
+func (ms *MarkerSystem) DeleteMarkerAt(pos int64) {
 	newMarkers := make([]Marker, 0, len(ms.Markers))
 	for _, m := range ms.Markers {
 		if m.Pos != pos {
@@ -138,7 +138,7 @@ func (ms *MarkerSystem) DestroyMarkers() {
 	ms.Markers = []Marker{}
 }
 
-func (ms *MarkerSystem) GetBlockPositionByClock(clock block.ID) (uint64, error) {
+func (ms *MarkerSystem) GetBlockPositionByClock(clock block.ID) (int64, error) {
 	for _, m := range ms.Markers {
 		if utils.EqualID(m.Block.ID, clock) {
 			return m.Pos, nil
@@ -147,7 +147,7 @@ func (ms *MarkerSystem) GetBlockPositionByClock(clock block.ID) (uint64, error) 
 	return 0, ErrInvalidPos
 }
 
-func (ms *MarkerSystem) GetBlockPositionByID(id *block.ID) (uint64, error) {
+func (ms *MarkerSystem) GetBlockPositionByID(id *block.ID) (int64, error) {
 	if ms.Markers == nil || len(ms.Markers) == 0 {
 		return 0, ErrNoMarkers
 	}
@@ -165,7 +165,7 @@ func (ms *MarkerSystem) GetBlockPositionByID(id *block.ID) (uint64, error) {
 	return 0, ErrBlockNotFound
 }
 
-func (ms *MarkerSystem) DeleteMarkerAtPosition(pos uint64) {
+func (ms *MarkerSystem) DeleteMarkerAtPosition(pos int64) {
 	newMarkers := make([]Marker, 0, len(ms.Markers))
 	for _, m := range ms.Markers {
 		if m.Pos != pos {

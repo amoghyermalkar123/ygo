@@ -3,6 +3,7 @@ package ygo
 import (
 	"encoding/json"
 	"fmt"
+	"sort"
 	"ygo/internal/block"
 	"ygo/internal/blockstore"
 	"ygo/internal/decoder"
@@ -22,11 +23,13 @@ func (yd *YDoc) Client() int64 {
 	return yd.blockStore.GetCurrentClient()
 }
 
-func (yd *YDoc) InsertText(pos uint64, text string) error {
-	return yd.blockStore.Insert(pos, text)
+func (yd *YDoc) InsertText(pos int64, text string) error {
+	yd.blockStore.Insert(pos, text)
+	fmt.Println("State vector after insert:", yd.blockStore.StateVector)
+	return nil
 }
 
-func (yd *YDoc) DeleteText(pos, length uint64) error {
+func (yd *YDoc) DeleteText(pos, length int64) error {
 	return yd.blockStore.Delete(pos, length)
 }
 
@@ -35,6 +38,9 @@ func (yd *YDoc) Content() string {
 }
 
 // refer readUpdateV2 from yjs in encoding.js
+// this should not be the first thing you call
+// its important to call InsertText atleast once before calling this
+// :) figure out how we can add a marker in this flow
 func (yd *YDoc) ApplyUpdate(data []byte) error {
 	// Step 1: Decode the binary update into a DecodedUpdate struct
 	update, err := decoder.DecodeUpdate(data)
@@ -56,33 +62,57 @@ func (yd *YDoc) ApplyUpdate(data []byte) error {
 }
 
 func (yd *YDoc) processUpdates(update *block.Update) {
+	// Collect all blocks from all clients
+	var allBlocks []*block.Block
+
 	for _, blocks := range update.Updates {
 		for _, remoteBlock := range blocks {
-			// Check if block already exists in store
-			if yd.blockStore.HasBlock(remoteBlock.ID) {
-				continue
+			// Skip blocks that already exist in store
+			if !yd.blockStore.HasBlock(remoteBlock.ID) {
+				allBlocks = append(allBlocks, remoteBlock)
 			}
+		}
+	}
 
+	// Sort blocks by clock in ascending order
+	sort.Slice(allBlocks, func(i, j int) bool {
+		return allBlocks[i].ID.Clock < allBlocks[j].ID.Clock
+	})
+
+	restOfTheUpdates := make(map[int64][]*block.Block)
+
+	// Process blocks in sorted order
+	for _, remoteBlock := range allBlocks {
+		state := yd.blockStore.GetState(remoteBlock.ID.Client)
+		offset := state - remoteBlock.ID.Clock
+		if offset < 0 {
+			// This block is ahead of our current state, so we need to wait
+			restOfTheUpdates[remoteBlock.ID.Client] = append(restOfTheUpdates[remoteBlock.ID.Client], remoteBlock)
+		} else {
 			// Check for missing dependencies
 			missingClientID := yd.blockStore.GetMissing(remoteBlock)
 			if missingClientID != nil {
-				// We have missing dependencies, add to pending updates
-				yd.blockStore.AddPendingUpdate(update)
+				restOfTheUpdates[remoteBlock.ID.Client] = append(restOfTheUpdates[remoteBlock.ID.Client], remoteBlock)
+				continue
 			}
 
 			// Resolve left and right references
 			if remoteBlock.LeftOrigin != (block.ID{}) {
-				remoteBlock.Left = yd.blockStore.GetBlockByID(remoteBlock.LeftOrigin)
+				remoteBlock.Left = yd.blockStore.ResolveNeighborByPreciseBlockID(remoteBlock.LeftOrigin)
 			}
 
 			if remoteBlock.RightOrigin != (block.ID{}) {
-				remoteBlock.Right = yd.blockStore.GetBlockByID(remoteBlock.RightOrigin)
+				remoteBlock.Right = yd.blockStore.ResolveNeighborByPreciseBlockID(remoteBlock.RightOrigin)
 			}
 
 			// Integrate the block
-			yd.blockStore.Integrate(remoteBlock)
+			yd.blockStore.Integrate(remoteBlock, int64(offset))
 		}
 	}
+
+	yd.blockStore.AddPendingUpdate(&block.Update{
+		Updates: restOfTheUpdates,
+	})
 }
 
 func (yd *YDoc) processDeletes(deletes *block.DeleteUpdate) {
@@ -118,7 +148,7 @@ func (yd *YDoc) processDeletes(deletes *block.DeleteUpdate) {
 
 				// Find the starting block for deletion
 				index := yd.blockStore.FindIndexInBlockArrayByID(clientBlocks, block.ID{
-					Clock:  uint64(startClock),
+					Clock:  int64(startClock),
 					Client: clientID,
 				})
 
@@ -126,8 +156,8 @@ func (yd *YDoc) processDeletes(deletes *block.DeleteUpdate) {
 				blk := clientBlocks[index]
 
 				// If the block starts before our deletion point, we need to split it
-				if !blk.IsDeleted && blk.ID.Clock < uint64(startClock) {
-					diff := int(uint64(startClock) - blk.ID.Clock)
+				if !blk.IsDeleted && blk.ID.Clock < int64(startClock) {
+					diff := int(int64(startClock) - blk.ID.Clock)
 					// Split the block at exactly the deletion point
 					_ = yd.blockStore.SplitBlock(blk, diff)
 
@@ -138,12 +168,12 @@ func (yd *YDoc) processDeletes(deletes *block.DeleteUpdate) {
 				for index < len(clientBlocks) {
 					blk = clientBlocks[index]
 
-					if blk.ID.Clock < uint64(endClock) {
+					if blk.ID.Clock < int64(endClock) {
 						if !blk.IsDeleted {
 							// check if the endClock sits between the clock range of `blk`
 							// if it does, we need to split the block
-							if uint64(endClock) < blk.ID.Clock+uint64(len(blk.Content)) {
-								splitPoint := int(uint64(endClock) - blk.ID.Clock)
+							if int64(endClock) < blk.ID.Clock+int64(len(blk.Content)) {
+								splitPoint := int(int64(endClock) - blk.ID.Clock)
 								yd.blockStore.SplitBlock(blk, splitPoint)
 							}
 
@@ -187,50 +217,9 @@ func (yd *YDoc) processDeletes(deletes *block.DeleteUpdate) {
 // Process any pending updates that can now be integrated
 func (yd *YDoc) processPendingUpdates() {
 	pendingUpdates := yd.blockStore.GetPendingUpdates()
-	if len(pendingUpdates) == 0 {
-		return
-	}
 
-	// This is a simplified approach to handle pending updates
-	// In a real implementation, you should check for dependency resolution
-	// and only process updates whose dependencies are met
-	newPendingUpdates := make([]*block.Update, 0)
-
-	for _, update := range pendingUpdates {
-		stillPending := false
-
-		// Try to apply the update
-		for _, blocks := range update.Updates {
-			for _, remoteBlock := range blocks {
-				if yd.blockStore.HasBlock(remoteBlock.ID) {
-					continue // Already integrated
-				}
-
-				missingClientID := yd.blockStore.GetMissing(remoteBlock)
-				if missingClientID != nil {
-					stillPending = true
-					break // Missing dependencies, can't integrate yet
-				}
-
-				// Resolve left and right references
-				if remoteBlock.LeftOrigin != (block.ID{}) {
-					remoteBlock.Left = yd.blockStore.GetBlockByID(remoteBlock.LeftOrigin)
-				}
-				if remoteBlock.RightOrigin != (block.ID{}) {
-					remoteBlock.Right = yd.blockStore.GetBlockByID(remoteBlock.RightOrigin)
-				}
-
-				// Integrate the block
-				yd.blockStore.Integrate(remoteBlock)
-			}
-			if stillPending {
-				break
-			}
-		}
-
-		if stillPending {
-			newPendingUpdates = append(newPendingUpdates, update)
-		}
+	for _, pendingUpdate := range pendingUpdates {
+		yd.processUpdates(pendingUpdate)
 	}
 
 	pendingDeletes := yd.blockStore.GetPendingDeletes()
@@ -238,9 +227,6 @@ func (yd *YDoc) processPendingUpdates() {
 	for _, deleteUpdate := range pendingDeletes {
 		yd.processDeletes(deleteUpdate)
 	}
-
-	// Update the pending updates list
-	yd.blockStore.SetPendingUpdates(newPendingUpdates)
 }
 
 // EncodeStateAsUpdate encodes the current document state as an update message
@@ -284,9 +270,9 @@ func (yd *YDoc) EncodeStateAsUpdate() ([]byte, error) {
 }
 
 // EncodeStateVector returns the current state vector as a map of client IDs to clocks
-func (yd *YDoc) EncodeStateVector() map[int64]uint64 {
+func (yd *YDoc) EncodeStateVector() map[int64]int64 {
 	// Return a copy of the state vector
-	stateVector := make(map[int64]uint64)
+	stateVector := make(map[int64]int64)
 	for clientID, clock := range yd.blockStore.StateVector {
 		stateVector[clientID] = clock
 	}

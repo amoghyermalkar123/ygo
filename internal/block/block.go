@@ -1,7 +1,7 @@
 package block
 
 type ID struct {
-	Clock  uint64
+	Clock  int64
 	Client int64
 }
 
@@ -31,12 +31,12 @@ func (b *Block) MarkDeleted() {
 type BlockTextListPosition struct {
 	Left  *Block
 	Right *Block
-	Index uint64
+	Index int64
 }
 
 func (l *BlockTextListPosition) Forward() {
 	if !l.Right.IsDeleted {
-		l.Index += uint64(len(l.Right.Content))
+		l.Index += int64(len(l.Right.Content))
 	}
 	l.Left = l.Right
 	l.Right = l.Right.Right
