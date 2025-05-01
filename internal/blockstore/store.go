@@ -14,13 +14,13 @@ type BlockStore struct {
 	Length int
 	Clock  int64
 	Blocks map[int64][]*block.Block
-	// TODO: deprecate this
+	// TODO: deprecate this, we can just use the blocks
 	// SV always stores the next expected clock for a client
 	StateVector     map[int64]int64
 	MarkerSystem    *markers.MarkerSystem
 	CurrentClientID int64
-	pendingUpdates  []*block.Update
-	pendingDeletes  []*block.DeleteUpdate
+	// lists all deletions performed by the CurentClientID
+	deleteSet map[int64][]block.DeleteRange
 }
 
 // NewStore initializes a new BlockStore.
@@ -143,6 +143,12 @@ func (s *BlockStore) Delete(pos, length int64) error {
 		}
 		length -= int64(len(blockPos.Right.Content))
 		blockPos.Right.MarkDeleted()
+
+		s.deleteSet[blockPos.Right.ID.Client] = append(s.deleteSet[blockPos.Right.ID.Client], block.DeleteRange{
+			StartClock:   blockPos.Right.ID.Clock,
+			DeleteLength: int64(len(blockPos.Right.Content)),
+		})
+
 		blockPos.Forward()
 	}
 	return nil
