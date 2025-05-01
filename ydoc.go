@@ -10,7 +10,9 @@ import (
 )
 
 type YDoc struct {
-	blockStore *blockstore.BlockStore
+	blockStore     *blockstore.BlockStore
+	pendingUpdates []*block.Update
+	pendingDeletes []*block.DeleteUpdate
 }
 
 func NewYDoc() *YDoc {
@@ -110,7 +112,7 @@ func (yd *YDoc) processUpdates(update *block.Update) {
 		}
 	}
 
-	yd.blockStore.AddPendingUpdate(&block.Update{
+	yd.AddPendingUpdate(&block.Update{
 		Updates: restOfTheUpdates,
 	})
 }
@@ -209,20 +211,20 @@ func (yd *YDoc) processDeletes(deletes *block.DeleteUpdate) {
 
 	// If we have unapplied deletions, store them for later processing
 	if unappliedDeletes.NumClients > 0 {
-		yd.blockStore.AddPendingDelete(unappliedDeletes)
+		yd.AddPendingDelete(unappliedDeletes)
 	}
 
 }
 
 // Process any pending updates that can now be integrated
 func (yd *YDoc) processPendingUpdates() {
-	pendingUpdates := yd.blockStore.GetPendingUpdates()
+	pendingUpdates := yd.GetPendingUpdates()
 
 	for _, pendingUpdate := range pendingUpdates {
 		yd.processUpdates(pendingUpdate)
 	}
 
-	pendingDeletes := yd.blockStore.GetPendingDeletes()
+	pendingDeletes := yd.GetPendingDeletes()
 
 	for _, deleteUpdate := range pendingDeletes {
 		yd.processDeletes(deleteUpdate)
@@ -276,5 +278,36 @@ func (yd *YDoc) EncodeStateVector() map[int64]int64 {
 	for clientID, clock := range yd.blockStore.StateVector {
 		stateVector[clientID] = clock
 	}
+
 	return stateVector
+}
+
+// AddPendingUpdate adds an update to the pending queue
+func (yd *YDoc) AddPendingUpdate(update *block.Update) {
+	yd.pendingUpdates = append(yd.pendingUpdates, update)
+}
+
+// GetPendingUpdates returns the current pending updates
+func (yd *YDoc) GetPendingUpdates() []*block.Update {
+	return yd.pendingUpdates
+}
+
+// SetPendingUpdates replaces the pending updates list
+func (yd *YDoc) SetPendingUpdates(updates []*block.Update) {
+	yd.pendingUpdates = updates
+}
+
+// AddPendingDelete adds a delete operation to the pending queue
+func (yd *YDoc) AddPendingDelete(del *block.DeleteUpdate) {
+	yd.pendingDeletes = append(yd.pendingDeletes, del)
+}
+
+// GetPendingDeletes returns the current pending deletes
+func (yd *YDoc) GetPendingDeletes() []*block.DeleteUpdate {
+	return yd.pendingDeletes
+}
+
+// SetPendingDeletes replaces the pending deletes list
+func (yd *YDoc) SetPendingDeletes(deletes []*block.DeleteUpdate) {
+	yd.pendingDeletes = deletes
 }

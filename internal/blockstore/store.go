@@ -90,10 +90,6 @@ func (s *BlockStore) Insert(pos int64, content string) error {
 	}
 
 	// create the new block
-	// :) TODO: use GetState instead of getNextClock
-	// this is causing an issue where the starting block does not start with 0
-	// and instead starts with 1.
-	// also the clock returned should be adjusted for id.Clock + len(content)
 	right := &block.Block{
 		ID:        block.ID{Client: s.CurrentClientID, Clock: s.GetState(s.CurrentClientID)},
 		Content:   content,
@@ -532,34 +528,4 @@ func (s *BlockStore) GetBlocksInRange(client int64, startClock int64, length int
 		}
 	}
 	return result
-}
-
-// AddPendingUpdate adds an update to the pending queue
-func (s *BlockStore) AddPendingUpdate(update *block.Update) {
-	s.pendingUpdates = append(s.pendingUpdates, update)
-}
-
-// GetPendingUpdates returns the current pending updates
-func (s *BlockStore) GetPendingUpdates() []*block.Update {
-	return s.pendingUpdates
-}
-
-// SetPendingUpdates replaces the pending updates list
-func (s *BlockStore) SetPendingUpdates(updates []*block.Update) {
-	s.pendingUpdates = updates
-}
-
-// AddPendingDelete adds a delete operation to the pending queue
-func (s *BlockStore) AddPendingDelete(del *block.DeleteUpdate) {
-	s.pendingDeletes = append(s.pendingDeletes, del)
-}
-
-// GetPendingDeletes returns the current pending deletes
-func (s *BlockStore) GetPendingDeletes() []*block.DeleteUpdate {
-	return s.pendingDeletes
-}
-
-// SetPendingDeletes replaces the pending deletes list
-func (s *BlockStore) SetPendingDeletes(deletes []*block.DeleteUpdate) {
-	s.pendingDeletes = deletes
 }
