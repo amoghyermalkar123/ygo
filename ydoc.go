@@ -127,7 +127,6 @@ func (yd *YDoc) processDeletes(deletes *block.DeleteUpdate) {
 	// Process each client's delete operations
 	for _, deletion := range deletes.ClientDeletes {
 		clientID := deletion.Client
-		clientBlocks := yd.blockStore.Blocks[clientID]
 		state := yd.blockStore.GetState(clientID)
 
 		// Create a slice for unapplied deletions for this client
@@ -140,7 +139,7 @@ func (yd *YDoc) processDeletes(deletes *block.DeleteUpdate) {
 			// Check if we have already integrated the blocks to be deleted
 			if startClock < int64(state) {
 				// We can proceed only when the clock we are deleting is already previously integrated
-				// If some part of the range is beyond our state, record it as unapplied
+				// If some part of the deletion range is beyond our state, record it as unapplied
 				if int64(state) < endClock {
 					clientUnappliedDeletes = append(clientUnappliedDeletes, block.DeleteRange{
 						StartClock:   int64(state),
@@ -149,13 +148,13 @@ func (yd *YDoc) processDeletes(deletes *block.DeleteUpdate) {
 				}
 
 				// Find the starting block for deletion
-				index := yd.blockStore.FindIndexInBlockArrayByID(clientBlocks, block.ID{
+				index := yd.blockStore.FindIndexInBlockArrayByID(yd.blockStore.Blocks[clientID], block.ID{
 					Clock:  int64(startClock),
 					Client: clientID,
 				})
 
 				// Get the first block and potentially split it
-				blk := clientBlocks[index]
+				blk := yd.blockStore.Blocks[clientID][index]
 
 				// If the block starts before our deletion point, we need to split it
 				if !blk.IsDeleted && blk.ID.Clock < int64(startClock) {
@@ -167,8 +166,8 @@ func (yd *YDoc) processDeletes(deletes *block.DeleteUpdate) {
 				}
 
 				// Now process all blocks in the deletion range
-				for index < len(clientBlocks) {
-					blk = clientBlocks[index]
+				for index < len(yd.blockStore.Blocks[clientID]) {
+					blk = yd.blockStore.Blocks[clientID][index]
 
 					if blk.ID.Clock < int64(endClock) {
 						if !blk.IsDeleted {
@@ -255,16 +254,15 @@ func (yd *YDoc) EncodeStateAsUpdate() ([]byte, error) {
 		updates[clientID] = clientBlocks
 	}
 
+	// Convert the internal deleteSet to a DeleteUpdate structure
+	deleteUpdate := createDeleteUpdateFromDeleteSet(yd.blockStore.DeleteSet)
+
 	// Create the update message
 	updateMsg := block.Updates{
 		Updates: block.Update{
 			Updates: updates,
 		},
-		// We don't need to include deletions for a full state update
-		Deletes: block.DeleteUpdate{
-			NumClients:    0,
-			ClientDeletes: []block.ClientDeletes{},
-		},
+		Deletes: deleteUpdate,
 	}
 
 	// Marshal the update message
@@ -310,4 +308,23 @@ func (yd *YDoc) GetPendingDeletes() []*block.DeleteUpdate {
 // SetPendingDeletes replaces the pending deletes list
 func (yd *YDoc) SetPendingDeletes(deletes []*block.DeleteUpdate) {
 	yd.pendingDeletes = deletes
+}
+
+// createDeleteUpdateFromDeleteSet converts the internal deleteSet map to a DeleteUpdate structure
+func createDeleteUpdateFromDeleteSet(deleteSet map[int64][]block.DeleteRange) block.DeleteUpdate {
+	clientDeletes := make([]block.ClientDeletes, 0, len(deleteSet))
+
+	for clientID, deleteRanges := range deleteSet {
+		if len(deleteRanges) > 0 {
+			clientDeletes = append(clientDeletes, block.ClientDeletes{
+				Client:        clientID,
+				DeletedRanges: deleteRanges,
+			})
+		}
+	}
+
+	return block.DeleteUpdate{
+		NumClients:    int64(len(clientDeletes)),
+		ClientDeletes: clientDeletes,
+	}
 }
