@@ -51,7 +51,6 @@ func (s *BlockStore) updateState(block *block.Block) {
 }
 
 func (s *BlockStore) GetState(client int64) int64 {
-	fmt.Println("GetState", client, s.StateVector)
 	if clock, ok := s.StateVector[client]; ok {
 		return clock
 	}
@@ -145,9 +144,9 @@ func (s *BlockStore) Delete(pos, length int64) error {
 
 		s.addToDeleteSet(s.CurrentClientID, blockPos.Right.ID.Clock, int64(len(blockPos.Right.Content)))
 
-		blockPos.Right.MarkDeleted()
-
 		length -= int64(len(blockPos.Right.Content))
+
+		blockPos.Right.MarkDeleted()
 
 		blockPos.Forward()
 	}

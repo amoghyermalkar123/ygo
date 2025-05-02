@@ -27,7 +27,6 @@ func (yd *YDoc) Client() int64 {
 
 func (yd *YDoc) InsertText(pos int64, text string) error {
 	yd.blockStore.Insert(pos, text)
-	fmt.Println("State vector after insert:", yd.blockStore.StateVector)
 	return nil
 }
 
@@ -50,7 +49,6 @@ func (yd *YDoc) ApplyUpdate(data []byte) error {
 		return fmt.Errorf("decode update: %w", err)
 	}
 
-	fmt.Println("Decoded update:", update)
 	// Step 2: Integrate the blocks from remote clients
 	yd.processUpdates(&update.Updates)
 
