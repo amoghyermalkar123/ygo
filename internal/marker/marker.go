@@ -63,40 +63,30 @@ func (ms *MarkerSystem) FindMarker(pos int64) (Marker, error) {
 	b := ms.Markers[0].Block
 	p := ms.Markers[0].Pos
 
+	// it's important to know that in this algorithm, we iterate blocks
+	// markers `Pos` field points to the starting clock of a block in our blockstore
+	// which is why u will see p += len(b.Content) in the iteration
+
 	// iterate right
-	for {
-		if b != nil && p < pos {
-			break
-		}
-		if b.IsDeleted {
-			if b.Right == nil {
+	for b.Right != nil && p < pos {
+		if !b.IsDeleted {
+			if pos < p+int64(len(b.Content)) {
 				break
 			}
-			b = b.Right
-		}
-		if b.Right == nil {
-			break
+			p += int64(len(b.Content))
 		}
 		b = b.Right
-		p += int64(len(b.Content))
 	}
 
 	// iterate left
-	for {
-		if b != nil && p > pos {
-			break
-		}
-		if b.IsDeleted {
-			if b.Left == nil {
+	for b.Left != nil && p > pos {
+		if !b.IsDeleted {
+			if pos >= p-int64(len(b.Content)) {
 				break
 			}
-			b = b.Left
-		}
-		if b.Left == nil {
-			break
+			p -= int64(len(b.Content))
 		}
 		b = b.Left
-		p += int64(len(b.Content))
 	}
 
 	final := Marker{
