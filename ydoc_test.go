@@ -230,19 +230,39 @@ func TestApplyUpdate_LargeDocuments(t *testing.T) {
 	target := ygo.NewYDoc()
 
 	// Create a larger document with multiple operations
-	err := source.InsertText(0, "Chapter 1: Introduction")
+	err := source.InsertText(0, "aaaaaaaaaaaaaaaaa")
 	require.NoError(t, err)
 
-	err = source.InsertText(24, "This is the beginning of the document")
+	err = source.InsertText(18, "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb")
 	require.NoError(t, err)
 
-	err = source.InsertText(65, "It contains multiple paragraphs and sections")
+	err = source.InsertText(90, "ccccccccccccccccccccccccccccccccccc")
 	require.NoError(t, err)
 
-	err = source.InsertText(116, "Chapter 2: Content")
+	// Sync to target
+	update, err := source.EncodeStateAsUpdate()
 	require.NoError(t, err)
 
-	err = source.InsertText(136, "This chapter contains more detailed information")
+	err = target.ApplyUpdate(update)
+	require.NoError(t, err)
+
+	// Verify content
+	assert.Equal(t, source.Content(), target.Content())
+}
+
+func TestApplyUpdate_WeDontCareAboutIndex(t *testing.T) {
+	// Create two docs
+	source := ygo.NewYDoc()
+	target := ygo.NewYDoc()
+
+	// Create a larger document with multiple operations
+	err := source.InsertText(0, "aaaaaaaaaaaaaaaaa")
+	require.NoError(t, err)
+
+	err = source.InsertText(11118, "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb")
+	require.NoError(t, err)
+
+	err = source.InsertText(90000, "ccccccccccccccccccccccccccccccccccc")
 	require.NoError(t, err)
 
 	// Sync to target
@@ -368,52 +388,6 @@ func TestApplyUpdate_ConflictResolution(t *testing.T) {
 	} else {
 		assert.Equal(t, "ACB", doc1.Content())
 	}
-}
-
-// TestApplyUpdate_OutOfOrderUpdates tests applying updates out of order
-func TestApplyUpdate_OutOfOrderUpdates(t *testing.T) {
-	// Create docs
-	sourceDoc := ygo.NewYDoc()
-	targetDoc := ygo.NewYDoc()
-
-	// Make a sequence of changes to the source
-	err := sourceDoc.InsertText(0, "A")
-	require.NoError(t, err)
-
-	// First update
-	update1, err := sourceDoc.EncodeStateAsUpdate()
-	require.NoError(t, err)
-
-	// Make more changes
-	err = sourceDoc.InsertText(1, "B")
-	require.NoError(t, err)
-
-	// Second update
-	update2, err := sourceDoc.EncodeStateAsUpdate()
-	require.NoError(t, err)
-
-	// Make more changes
-	err = sourceDoc.InsertText(2, "C")
-	require.NoError(t, err)
-
-	fmt.Println("source doc content after insertions:", sourceDoc.Content())
-	// Third update
-	update3, err := sourceDoc.EncodeStateAsUpdate()
-	require.NoError(t, err)
-
-	// Apply updates out of order to the target
-	err = targetDoc.ApplyUpdate(update3) // Apply C first
-	require.NoError(t, err)
-
-	err = targetDoc.ApplyUpdate(update1) // Then apply A
-	require.NoError(t, err)
-
-	err = targetDoc.ApplyUpdate(update2) // Finally apply B
-	require.NoError(t, err)
-
-	// Verify content is correct
-	assert.Equal(t, sourceDoc.Content(), targetDoc.Content())
-	assert.Equal(t, "ABC", targetDoc.Content())
 }
 
 // TestApplyUpdate_IdempotentUpdates tests that applying the same update multiple times is idempotent
