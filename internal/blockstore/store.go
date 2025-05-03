@@ -14,7 +14,6 @@ type BlockStore struct {
 	Length int
 	Clock  int64
 	Blocks map[int64][]*block.Block
-	// TODO: deprecate this, we can just use the blocks
 	// SV always stores the next expected clock for a client
 	StateVector     map[int64]int64
 	MarkerSystem    *markers.MarkerSystem
@@ -401,7 +400,6 @@ func (s *BlockStore) getItemCleanStart(id block.ID) *block.Block {
 	return structs[index]
 }
 
-// TODO: cant we just split marker.Block and return the right block?
 // marker system gives us the correct block to be split why we come here?
 func (s *BlockStore) findIndexCleanStart(blocks []*block.Block, id block.ID) int {
 	index := s.FindIndexInBlockArrayByID(blocks, id)
