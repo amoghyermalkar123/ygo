@@ -145,6 +145,11 @@ func (yd *YDoc) processDeletes(deletes *block.DeleteUpdate) {
 					})
 				}
 
+				// NOTE: this is a common routine in the code base
+				// if you see, the next three code blocks is basically the `refinePreciseBlock` function
+				// but we dont use it here since we need to know if a block needed a precise cut
+				// and based on that need to increment the index to start the deletion from.
+
 				// Find the starting block for deletion
 				index := yd.blockStore.FindIndexInBlockArrayByID(yd.blockStore.Blocks[clientID], block.ID{
 					Clock:  int64(startClock),

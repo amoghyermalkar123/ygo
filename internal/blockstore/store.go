@@ -398,7 +398,7 @@ func (s *BlockStore) refinePreciseBlock(id block.ID) *block.Block {
 
 	blk := s.Blocks[id.Client][index]
 
-	if blk.ID.Clock <= id.Clock {
+	if !blk.IsDeleted && blk.ID.Clock <= id.Clock {
 		s.PreciseBlockCut(blk, int(id.Clock)-int(blk.ID.Clock))
 		// because we split the block, we deal with the right of the blk
 		// which is the new block and hence we return index + 1
