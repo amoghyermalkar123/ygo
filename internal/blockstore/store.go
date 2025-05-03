@@ -4,9 +4,12 @@ import (
 	"fmt"
 	"math/rand"
 	"sort"
+
 	"ygo/internal/block"
 	markers "ygo/internal/marker"
 	"ygo/internal/utils"
+
+	"go.uber.org/zap"
 )
 
 type BlockStore struct {
@@ -20,6 +23,8 @@ type BlockStore struct {
 	CurrentClientID int64
 	// lists all deletions performed by the CurentClientID
 	DeleteSet map[int64][]block.DeleteRange
+
+	log *zap.Logger
 }
 
 // NewStore initializes a new BlockStore.
@@ -56,10 +61,6 @@ func (s *BlockStore) GetState(client int64) int64 {
 	return 0
 }
 
-func (s *BlockStore) getNextClock(client int64) int64 {
-	return s.GetState(client) + 1
-}
-
 func (s *BlockStore) GetCurrentClient() int64 {
 	return s.CurrentClientID
 }
@@ -82,14 +83,16 @@ func (s *BlockStore) GetMissing(blk *block.Block) *int64 {
 
 // InsertText inserts content at a given position (supports split).
 func (s *BlockStore) Insert(pos int64, content string) error {
+	s.log.Info("insert")
+
 	// find the correct position
 	blockPos, err := s.findPositionForNewBlock(pos)
 	if err != nil {
 		return fmt.Errorf("find position for new block: %w", err)
 	}
 
-	// create the new block
-	right := &block.Block{
+	// create a brand new block
+	newBlk := &block.Block{
 		ID:        block.ID{Client: s.CurrentClientID, Clock: s.GetState(s.CurrentClientID)},
 		Content:   content,
 		IsDeleted: false,
@@ -98,25 +101,25 @@ func (s *BlockStore) Insert(pos int64, content string) error {
 	// if we found a viable left neighbor from findPositionForNewBlock
 	// attach it
 	if blockPos.Left != nil {
-		right.Left = blockPos.Left
-		right.LeftOrigin = blockPos.Left.ID
+		newBlk.Left = blockPos.Left
+		newBlk.LeftOrigin = blockPos.Left.ID
 	}
 
 	// if we found a viable right neighbor from findPositionForNewBlock
 	// attach it
 	if blockPos.Right != nil {
-		right.RightOrigin = blockPos.Right.ID
-		right.Right = blockPos.Right
+		newBlk.RightOrigin = blockPos.Right.ID
+		newBlk.Right = blockPos.Right
 	}
 
 	// start integration
-	s.Integrate(right, 0)
+	s.Integrate(newBlk, 0)
 
-	blockPos.Right = right
+	blockPos.Right = newBlk
 
 	s.adjustLength(content)
 
-	s.MarkerSystem.Add(right, pos)
+	s.MarkerSystem.Add(newBlk, pos)
 
 	return nil
 }
@@ -335,13 +338,18 @@ func (s *BlockStore) addBlock(blk *block.Block) {
 	blocks[i] = blk
 
 	s.Blocks[blk.ID.Client] = blocks
+
+	s.log.Info("added block", zap.Any("block", blk.ID), zap.String("content", blk.Content))
 }
 
 // find the next appropriate position for integrating a new block
 func (s *BlockStore) findPositionForNewBlock(index int64) (*block.BlockTextListPosition, error) {
 	textListPosition := &block.BlockTextListPosition{}
+
 	// find marker
 	marker, _ := s.MarkerSystem.FindMarker(index)
+
+	s.log.Debug("found marker", zap.Int64("marker", marker.Pos), zap.Int64("block", marker.Block.ID.Clock))
 
 	if (marker == markers.Marker{}) {
 		textListPosition = &block.BlockTextListPosition{
@@ -355,16 +363,20 @@ func (s *BlockStore) findPositionForNewBlock(index int64) (*block.BlockTextListP
 			Index: marker.Pos,
 		}
 	}
-	// find next position
+
+	s.log.Debug("text list position", zap.Int64("left", textListPosition.Left.ID.Clock), zap.Int64("right", textListPosition.Right.ID.Clock))
+
 	// marker.Pos always point to the start of the block
 	// so index-marker.Pos is the offset from the start of the block
 	// to the position where the user wants to insert
-	nextBlock := s.findNextPosition(textListPosition, index-marker.Pos)
+	updatedTLP := s.refineTextListPosition(textListPosition, index-marker.Pos)
 
-	return nextBlock, nil
+	return updatedTLP, nil
 }
 
-func (s *BlockStore) findNextPosition(pos *block.BlockTextListPosition, blockOffset int64) *block.BlockTextListPosition {
+func (s *BlockStore) refineTextListPosition(pos *block.BlockTextListPosition, blockOffset int64) *block.BlockTextListPosition {
+	// no block split at index required
+	// no need to refine the text list position
 	if blockOffset <= 0 {
 		return pos
 	}
@@ -381,6 +393,12 @@ func (s *BlockStore) findNextPosition(pos *block.BlockTextListPosition, blockOff
 				Clock:  pos.Right.ID.Clock + int64(blockOffset),
 			})
 		}
+		// if the block didn't required to be split, then the below ops
+		// simple would mean left becomes the marker block we found
+		// right becomes the right to the marker block
+		// since `pos` passed to this function is generally by `findPositionForNewBlock`
+		// where pos.Left is the left of the marker and pos.Right is the marker block itself
+		// while insertion, you will see this works out for us, check `Insert`
 		pos.Index += int64(len(pos.Right.Content))
 		blockOffset -= int64(len(pos.Right.Content))
 		// move `pos` to the right
@@ -394,6 +412,8 @@ func (s *BlockStore) findNextPosition(pos *block.BlockTextListPosition, blockOff
 // This is the position where the block is split
 // based on the clock provided in the id.
 func (s *BlockStore) refinePreciseBlock(id block.ID) *block.Block {
+	s.log.Info("refine precise block", zap.Any("id", id))
+
 	index := s.FindIndexInBlockArrayByID(s.Blocks[id.Client], id)
 
 	blk := s.Blocks[id.Client][index]
@@ -445,6 +465,9 @@ func (s *BlockStore) PreciseBlockCut(left *block.Block, diff int) *block.Block {
 	if right.Right != nil {
 		right.Right.Left = right
 	}
+
+	s.log.Debug("precise cut: left", zap.Int("diff", diff), zap.Any("block", left.ID), zap.String("content", left.Content))
+	s.log.Debug("precide cut: right", zap.Int("diff", diff), zap.Any("block", right.ID), zap.String("content", right.Content))
 
 	// Insert new block into BlockStore
 	s.addBlock(right)
