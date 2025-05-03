@@ -8,6 +8,7 @@ import (
 	"ygo/internal/block"
 	markers "ygo/internal/marker"
 	"ygo/internal/utils"
+	"ygo/logger"
 
 	"go.uber.org/zap"
 )
@@ -23,8 +24,6 @@ type BlockStore struct {
 	CurrentClientID int64
 	// lists all deletions performed by the CurentClientID
 	DeleteSet map[int64][]block.DeleteRange
-
-	log *zap.Logger
 }
 
 // NewStore initializes a new BlockStore.
@@ -83,7 +82,7 @@ func (s *BlockStore) GetMissing(blk *block.Block) *int64 {
 
 // InsertText inserts content at a given position (supports split).
 func (s *BlockStore) Insert(pos int64, content string) error {
-	s.log.Info("insert")
+	logger.Info("insert text", zap.Int64("pos", pos), zap.String("content", content))
 
 	// find the correct position
 	blockPos, err := s.findPositionForNewBlock(pos)
@@ -338,8 +337,6 @@ func (s *BlockStore) addBlock(blk *block.Block) {
 	blocks[i] = blk
 
 	s.Blocks[blk.ID.Client] = blocks
-
-	s.log.Info("added block", zap.Any("block", blk.ID), zap.String("content", blk.Content))
 }
 
 // find the next appropriate position for integrating a new block
@@ -349,22 +346,20 @@ func (s *BlockStore) findPositionForNewBlock(index int64) (*block.BlockTextListP
 	// find marker
 	marker, _ := s.MarkerSystem.FindMarker(index)
 
-	s.log.Debug("found marker", zap.Int64("marker", marker.Pos), zap.Int64("block", marker.Block.ID.Clock))
-
 	if (marker == markers.Marker{}) {
 		textListPosition = &block.BlockTextListPosition{
 			Right: s.Start,
 			Index: 0,
 		}
 	} else {
+
 		textListPosition = &block.BlockTextListPosition{
 			Left:  marker.Block.Left,
 			Right: marker.Block,
 			Index: marker.Pos,
 		}
-	}
 
-	s.log.Debug("text list position", zap.Int64("left", textListPosition.Left.ID.Clock), zap.Int64("right", textListPosition.Right.ID.Clock))
+	}
 
 	// marker.Pos always point to the start of the block
 	// so index-marker.Pos is the offset from the start of the block
@@ -412,7 +407,6 @@ func (s *BlockStore) refineTextListPosition(pos *block.BlockTextListPosition, bl
 // This is the position where the block is split
 // based on the clock provided in the id.
 func (s *BlockStore) refinePreciseBlock(id block.ID) *block.Block {
-	s.log.Info("refine precise block", zap.Any("id", id))
 
 	index := s.FindIndexInBlockArrayByID(s.Blocks[id.Client], id)
 
@@ -465,9 +459,6 @@ func (s *BlockStore) PreciseBlockCut(left *block.Block, diff int) *block.Block {
 	if right.Right != nil {
 		right.Right.Left = right
 	}
-
-	s.log.Debug("precise cut: left", zap.Int("diff", diff), zap.Any("block", left.ID), zap.String("content", left.Content))
-	s.log.Debug("precide cut: right", zap.Int("diff", diff), zap.Any("block", right.ID), zap.String("content", right.Content))
 
 	// Insert new block into BlockStore
 	s.addBlock(right)

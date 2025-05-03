@@ -7,6 +7,7 @@ import (
 	"ygo/internal/block"
 	"ygo/internal/blockstore"
 	"ygo/internal/decoder"
+	"ygo/logger"
 )
 
 type YDoc struct {
@@ -16,6 +17,8 @@ type YDoc struct {
 }
 
 func NewYDoc() *YDoc {
+	logger.Init()
+
 	return &YDoc{
 		blockStore: blockstore.NewStore(),
 	}

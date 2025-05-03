@@ -2,11 +2,17 @@ package blockstore
 
 import (
 	"testing"
+	"ygo/logger"
 
 	"github.com/stretchr/testify/assert"
 )
 
+func init() {
+	logger.Init()
+}
+
 func TestInsertAtBeginning(t *testing.T) {
+
 	store := NewStore()
 	err := store.Insert(0, "Hello")
 	if err != nil {
