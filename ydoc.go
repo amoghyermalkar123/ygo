@@ -158,7 +158,7 @@ func (yd *YDoc) processDeletes(deletes *block.DeleteUpdate) {
 				if !blk.IsDeleted && blk.ID.Clock < int64(startClock) {
 					diff := int(int64(startClock) - blk.ID.Clock)
 					// Split the block at exactly the deletion point
-					_ = yd.blockStore.SplitBlock(blk, diff)
+					_ = yd.blockStore.PreciseBlockCut(blk, diff)
 
 					index++ // We want to start deleting from the right part of the split
 				}
@@ -173,7 +173,7 @@ func (yd *YDoc) processDeletes(deletes *block.DeleteUpdate) {
 							// if it does, we need to split the block
 							if int64(endClock) < blk.ID.Clock+int64(len(blk.Content)) {
 								splitPoint := int(int64(endClock) - blk.ID.Clock)
-								yd.blockStore.SplitBlock(blk, splitPoint)
+								yd.blockStore.PreciseBlockCut(blk, splitPoint)
 							}
 
 							// Mark the block as deleted

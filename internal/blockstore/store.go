@@ -135,7 +135,7 @@ func (s *BlockStore) Delete(pos, length int64) error {
 	// traverse and delete the blocks until `length` is deleted from blockstore
 	for length > 0 && blockPos.Right != nil {
 		if length < int64(len(blockPos.Right.Content)) {
-			s.getItemCleanStart(block.ID{
+			s.refinePreciseBlock(block.ID{
 				Client: blockPos.Right.ID.Client,
 				Clock:  blockPos.Right.ID.Clock + int64(length),
 			})
@@ -161,7 +161,7 @@ func (s *BlockStore) addToDeleteSet(client int64, startClock, length int64) {
 }
 
 // getItemCleanEnd retrieves or creates a block that ends exactly at the specified ID.
-// This is similar to getItemCleanStart but focuses on the end position.
+// This is similar to refinePreciseBlock but focuses on the end position.
 func (s *BlockStore) getItemCleanEnd(id block.ID) *block.Block {
 	structs := s.Blocks[id.Client]
 	if len(structs) == 0 {
@@ -182,7 +182,7 @@ func (s *BlockStore) getItemCleanEnd(id block.ID) *block.Block {
 		splitPosition := int(id.Clock - blk.ID.Clock + 1)
 
 		// Create a new block by splitting the existing one
-		s.SplitBlock(blk, splitPosition)
+		s.PreciseBlockCut(blk, splitPosition)
 
 		// After splitting, the original block 'blk' now ends exactly at id.Clock
 	}
@@ -376,7 +376,7 @@ func (s *BlockStore) findNextPosition(pos *block.BlockTextListPosition, blockOff
 		// so check if the offset is within the block
 		// if yes, we need a clean start so split the block
 		if blockOffset < int64(len(pos.Right.Content)) {
-			_ = s.getItemCleanStart(block.ID{
+			_ = s.refinePreciseBlock(block.ID{
 				Client: pos.Right.ID.Client,
 				Clock:  pos.Right.ID.Clock + int64(blockOffset),
 			})
@@ -390,29 +390,22 @@ func (s *BlockStore) findNextPosition(pos *block.BlockTextListPosition, blockOff
 	return pos
 }
 
-// getItemCleanStart retrieves the block at the clean start position.
-// This is the position where the block can be split
-// the clock is adjusted accordingly
-func (s *BlockStore) getItemCleanStart(id block.ID) *block.Block {
-	structs := s.Blocks[id.Client]
-	index := s.findIndexCleanStart(structs, id)
-	structs = s.Blocks[id.Client]
-	return structs[index]
-}
+// refinePreciseBlock refines the block at the precise start position.
+// This is the position where the block is split
+// based on the clock provided in the id.
+func (s *BlockStore) refinePreciseBlock(id block.ID) *block.Block {
+	index := s.FindIndexInBlockArrayByID(s.Blocks[id.Client], id)
 
-// marker system gives us the correct block to be split why we come here?
-func (s *BlockStore) findIndexCleanStart(blocks []*block.Block, id block.ID) int {
-	index := s.FindIndexInBlockArrayByID(blocks, id)
-	blk := blocks[index]
+	blk := s.Blocks[id.Client][index]
 
 	if blk.ID.Clock <= id.Clock {
-		s.SplitBlock(blk, int(id.Clock)-int(blk.ID.Clock))
+		s.PreciseBlockCut(blk, int(id.Clock)-int(blk.ID.Clock))
 		// because we split the block, we deal with the right of the blk
 		// which is the new block and hence we return index + 1
-		return index + 1
+		return s.Blocks[id.Client][index+1]
 	}
 
-	panic(fmt.Sprintf("getItemCleanStart: no block found for ID %v", id))
+	return blk
 }
 
 // equivalent to findIndexSS from yjs
@@ -427,9 +420,10 @@ func (s *BlockStore) FindIndexInBlockArrayByID(blocks []*block.Block, id block.I
 	panic(fmt.Sprintf("findIndexInBlockArrayByID: no exact match for ID %v", id))
 }
 
-func (s *BlockStore) SplitBlock(left *block.Block, diff int) *block.Block {
+// PreciseBlockCut splits a block at the precise position of the diff provided to it
+func (s *BlockStore) PreciseBlockCut(left *block.Block, diff int) *block.Block {
 	if diff <= 0 || diff >= len(left.Content) {
-		panic(fmt.Sprintf("SplitBlock: invalid split position %d in block with length %d", diff, len(left.Content)))
+		panic(fmt.Sprintf("PreciseBlockCut: invalid split position %d in block with length %d", diff, len(left.Content)))
 	}
 
 	// Create the right block
@@ -454,6 +448,7 @@ func (s *BlockStore) SplitBlock(left *block.Block, diff int) *block.Block {
 
 	// Insert new block into BlockStore
 	s.addBlock(right)
+
 	return right
 }
 
@@ -513,7 +508,7 @@ func (s *BlockStore) ResolveNeighborByPreciseBlockID(originID block.ID) *block.B
 				// Split at id.Clock - blockStart
 				splitPos := int(originID.Clock - blockStart)
 				if splitPos > 0 && splitPos < len(b.Content) {
-					right := s.SplitBlock(b, splitPos)
+					right := s.PreciseBlockCut(b, splitPos)
 					// If we want the start of the right part
 					return right
 				}
