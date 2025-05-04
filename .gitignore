@@ -2,3 +2,4 @@
 tmp/
 *.out
 *.log
+./*.log
