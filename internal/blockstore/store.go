@@ -346,6 +346,8 @@ func (s *BlockStore) findPositionForNewBlock(index int64) (*block.BlockTextListP
 	// find marker
 	marker, _ := s.MarkerSystem.FindMarker(index)
 
+	logger.Debug("marker", marker.Block, nil, zap.Int64("index", index))
+
 	if (marker == markers.Marker{}) {
 		textListPosition = &block.BlockTextListPosition{
 			Right: s.Start,
@@ -358,8 +360,9 @@ func (s *BlockStore) findPositionForNewBlock(index int64) (*block.BlockTextListP
 			Right: marker.Block,
 			Index: marker.Pos,
 		}
-
 	}
+
+	logger.Debug("tlp", nil, textListPosition, zap.Int64("index", index))
 
 	// marker.Pos always point to the start of the block
 	// so index-marker.Pos is the offset from the start of the block
@@ -407,12 +410,15 @@ func (s *BlockStore) refineTextListPosition(pos *block.BlockTextListPosition, bl
 // This is the position where the block is split
 // based on the clock provided in the id.
 func (s *BlockStore) refinePreciseBlock(id block.ID) *block.Block {
+	logger.Debug("refine required", nil, nil, zap.Any("ID", id))
 
 	index := s.FindIndexInBlockArrayByID(s.Blocks[id.Client], id)
 
 	blk := s.Blocks[id.Client][index]
 
 	if !blk.IsDeleted && blk.ID.Clock <= id.Clock {
+		logger.Debug("refine block", blk, nil)
+
 		s.PreciseBlockCut(blk, int(id.Clock)-int(blk.ID.Clock))
 		// because we split the block, we deal with the right of the blk
 		// which is the new block and hence we return index + 1
@@ -436,6 +442,8 @@ func (s *BlockStore) FindIndexInBlockArrayByID(blocks []*block.Block, id block.I
 
 // PreciseBlockCut splits a block at the precise position of the diff provided to it
 func (s *BlockStore) PreciseBlockCut(left *block.Block, diff int) *block.Block {
+	logger.Debug("refining", left, nil, zap.Any("precise point", diff))
+
 	if diff <= 0 || diff >= len(left.Content) {
 		panic(fmt.Sprintf("PreciseBlockCut: invalid split position %d in block with length %d", diff, len(left.Content)))
 	}
@@ -459,6 +467,9 @@ func (s *BlockStore) PreciseBlockCut(left *block.Block, diff int) *block.Block {
 	if right.Right != nil {
 		right.Right.Left = right
 	}
+
+	logger.Debug("refined right", right, nil)
+	logger.Debug("refined left", left, nil)
 
 	// Insert new block into BlockStore
 	s.addBlock(right)

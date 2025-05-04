@@ -46,7 +46,7 @@ func Init() {
 				fileCore := zapcore.NewCore(
 					zapcore.NewJSONEncoder(encoderConfig),
 					zapcore.AddSync(logFile),
-					zap.NewAtomicLevelAt(zap.InfoLevel),
+					zap.NewAtomicLevelAt(zap.DebugLevel),
 				)
 
 				// Create a multi-core to write to both console and file
@@ -55,7 +55,7 @@ func Init() {
 					zapcore.NewCore(
 						zapcore.NewConsoleEncoder(encoderConfig),
 						zapcore.AddSync(os.Stdout),
-						zap.NewAtomicLevelAt(zap.InfoLevel),
+						zap.NewAtomicLevelAt(zap.DebugLevel),
 					),
 				)
 			}
@@ -92,24 +92,24 @@ func GetLogger() *zap.Logger {
 // Debug logs a debug message
 func Debug(msg string, block *block.Block, tlp *block.BlockTextListPosition, fields ...zap.Field) {
 	if block != nil {
-		fields = append(fields, zap.Int64("block", block.ID.Clock))
+		fields = append(fields, zap.Any("Block", block.ID))
 		if block.Left != nil {
-			fields = append(fields, zap.Int64("left", block.Left.ID.Clock))
+			fields = append(fields, zap.Any("Block_left", block.Left.ID))
 		}
 		if block.Right != nil {
-			fields = append(fields, zap.Int64("right", block.Right.ID.Clock))
+			fields = append(fields, zap.Any("Block_right", block.Right.ID))
 		}
-		fields = append(fields, zap.String("content", block.Content))
+		fields = append(fields, zap.String("Block_content", block.Content))
 	}
 
 	if tlp != nil {
 		if tlp.Left != nil {
-			fields = append(fields, zap.Int64("TLP: left", tlp.Left.ID.Clock))
+			fields = append(fields, zap.Any("TLP_left", tlp.Left.ID))
 		}
 		if tlp.Right != nil {
-			fields = append(fields, zap.Int64("TLP: right", tlp.Right.ID.Clock))
+			fields = append(fields, zap.Any("TLP_right", tlp.Right.ID))
 		}
-		fields = append(fields, zap.Int64("TLP: index", tlp.Index))
+		fields = append(fields, zap.Int64("TLP_index", tlp.Index))
 	}
 
 	GetLogger().Debug(msg, fields...)
