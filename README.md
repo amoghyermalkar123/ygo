@@ -2,17 +2,20 @@
 A Text-based CRDT library in Golang
 
 ### What are CRDT's ?
-A novel algorithm or a family of data types that have 3 mathematical properties:
+CRDT's or Conflict-Free Replicated Data Types are a novel algorithm or a family of data types that have 3 mathematical properties:
 - Commutativity
 - Associativity
 - Idempotence
 
-It's a common practise that such data types fulfill these properties in-order to be what we call as either
+It's a common practise that such data types fulfill these properties in-order to be categorized as one of the following:
 - Convergent
-
-Or
-
 - Commutative
+
+Ygo stands for Yata-Go based on the original paper where the algorithm is called - Yet Another Transformation Approach
+
+This CRDT though is a hybrid of both Convergent and Commutative CRDT's.
+- Updates are Commutative
+- Deletes are Convergent
 
 It's inspired and loosely based on this wonderful project - https://github.com/yjs/yjs
 and the academic paper by the authors that back the same project.
