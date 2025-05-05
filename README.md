@@ -17,10 +17,10 @@ This CRDT though is a hybrid of both Convergent and Commutative CRDT's.
 - Updates are Commutative
 - Deletes are Convergent
 
-It's inspired and loosely based on this wonderful project - https://github.com/yjs/yjs
+It's inspired by this wonderful project - https://github.com/yjs/yjs
 and the academic paper by the authors that back the same project.
 
-This is ofcourse NOT production grade. It's a result of more than a year spent on learning the fundamental math, distributed systems and nights spent reverse engineering the yjs/ yrs project.
+This is ofcourse NOT production grade. It's a result of more than a year spent on learning the fundamental math, distributed systems and nights spent understanding the yjs/ yrs project.
 
 The main project is extensive and highly sophisticated, my attempt tries to follow along the same path. They have a lot of datatypes while `ygo` only supports a text based CRDT.
 
