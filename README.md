@@ -1,7 +1,4 @@
-### What is it?
-A Text-based CRDT library in Golang
-
-### What are CRDT's ?
+### What even are CRDT's ?
 CRDT's or Conflict-Free Replicated Data Types are a novel algorithm or a family of data types that have 3 mathematical properties:
 - Commutativity
 - Associativity
@@ -17,15 +14,54 @@ This CRDT though is a hybrid of both Convergent and Commutative CRDT's.
 - Updates are Commutative
 - Deletes are Convergent
 
-It's inspired by this wonderful project - https://github.com/yjs/yjs
-and the academic paper by the authors that back the same project.
+### What problem do CRDT's solve?
+The core idea behind these data types is that they don't require any co-ordination. Think of a typical async network scenario where a node has some data other nodes in the network might be interested in. The way you would model that is with a centralized process that co-ordinates stuff and orchestrates correctness of data i.e. a the messages should be delivered in order they were sent. In CRDT-land, the same use case would follow but without a centralized process. Each node in a network can be thought of as self-healing, in the sense that they can get messages from other nodes in any order, after any amount of time and still at the end, each node in the network, will converge to the same state. Regardless of how fragile network is, CRDT's have the property to always endup with the same state.
 
-This is ofcourse NOT production grade. It's a result of more than a year spent on learning the fundamental math, distributed systems and nights spent understanding the yjs/ yrs project.
+By this point you would've figure out one thing. They are not good in scenarios that require strong consistency. Today, they are used in collaborative or local-first software. Where consistency is desired eventually and not real-time.
 
-The main project is extensive and highly sophisticated, my attempt tries to follow along the same path. They have a lot of datatypes while `ygo` only supports a text based CRDT.
+### Current status of the project:
+This library will be a learning project and focusing on text-based CRDT for now. Future roadmap is still TBD.
 
-You will find that i have added extensive comments throughout the codebase for newer folks to understand how the algorithm works so you can avoid what i had to do-
-reverse engineer a rather nuanced codebase like Yjs.
+### Examples:
+Say in one process you do this:
+```go
+	// Create a new YDoc instance
+	doc := ygo.NewYDoc()
 
-### Current status:
-I am working on a replay system so that a run of the algorithm can be visualized to better understand each steps and the subtelties that lie across the codebase.
+	// Insert text into the document
+	err := doc.InsertText(0, "Hello, World!")
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(doc.Content())
+	// Hello, World!
+```
+
+And in another process:
+```go
+	// Create a new YDoc instance
+	doc := ygo.NewYDoc()
+
+	// Insert text into the document
+	err := doc.InsertText(0, "Hello, Amazing World!")
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(doc.Content())
+	// Hello, World!
+```
+
+Eventually when you do this on both nodes:
+
+```go
+localDoc.ApplyUpdate(// json data)
+```
+
+Both of the nodes will end up with the same data, in this case -
+```
+Hello, Amazing World
+```
+
+CRDT's are protocol and network agnostic so we can use HTTP, QUIC, raw TCP socket, Websockets, anything really as long as we can connect to a process on the Internet.
