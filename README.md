@@ -1,7 +1,5 @@
-YGo: Conflict-Free Collaborative Text Editing in Go
-<div align="center">
-  <img src="https://via.placeholder.com/200x200.png?text=YGo" alt="YGo Logo" width="200" height="200">
-</div>
+# YGo: A Text-based Conflict-Free Replicated Data Type in Go
+
 YGo is a lightweight, efficient implementation of a text-based Conflict-Free Replicated Data Type (CRDT) in Go. Based on the Yata algorithm ("Yet Another Transformation Approach"), YGo enables real-time collaborative editing with strong eventual consistency guarantees without requiring a central coordinator.
 
 🚀 Features
@@ -27,7 +25,7 @@ This makes YGo ideal for collaborative applications where:
 - Real-time collaboration is required without strict coordination
 
 🔧 Installation
-`go get github.com/amoghyermalkar123/ygo`
+```go get github.com/amoghyermalkar123/ygo```
 
 📝 Usage
 Basic Example
