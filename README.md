@@ -25,7 +25,9 @@ This makes YGo ideal for collaborative applications where:
 - Real-time collaboration is required without strict coordination
 
 🔧 Installation
-```go get github.com/amoghyermalkar123/ygo```
+```bash
+go get github.com/amoghyermalkar123/ygo
+```
 
 📝 Usage
 Basic Example
