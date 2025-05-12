@@ -477,8 +477,6 @@ func (s *BlockStore) PreciseBlockCut(left *block.Block, diff int) *block.Block {
 	return right
 }
 
-// internal/blockstore/store.go
-
 // HasBlock checks if a block with the given ID exists in the store
 func (s *BlockStore) HasBlock(id block.ID) bool {
 	state := s.GetState(id.Client)

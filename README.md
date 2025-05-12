@@ -1,67 +1,143 @@
-### What even are CRDT's ?
-CRDT's or Conflict-Free Replicated Data Types are a novel algorithm or a family of data types that have 3 mathematical properties:
-- Commutativity
-- Associativity
-- Idempotence
+YGo: Conflict-Free Collaborative Text Editing in Go
+<div align="center">
+  <img src="https://via.placeholder.com/200x200.png?text=YGo" alt="YGo Logo" width="200" height="200">
+</div>
+YGo is a lightweight, efficient implementation of a text-based Conflict-Free Replicated Data Type (CRDT) in Go. Based on the Yata algorithm ("Yet Another Transformation Approach"), YGo enables real-time collaborative editing with strong eventual consistency guarantees without requiring a central coordinator.
 
-It's a common practise that such data types fulfill these properties in-order to be categorized as one of the following:
-- Convergent
-- Commutative
+🚀 Features
+- Collaborative Text Editing: Multiple users can edit the same document concurrently
+- Conflict-Free Resolution: Automatic handling of conflicting edits
+- Offline-First Support: Work offline and synchronize changes when reconnected
+- Network Agnostic: Use with any transport layer (WebSockets, HTTP, QUIC, etc.)
+- Lightweight: Minimal dependencies and efficient memory usage
+- Fully Tested: Comprehensive test suite ensuring reliability
 
-Ygo stands for Yata-Go based on the original paper where the algorithm is called - Yet Another Transformation Approach
+📚 What are CRDTs?
+CRDTs (Conflict-Free Replicated Data Types) are a family of data structures that enable multiple processes to independently update shared data without coordination, while ensuring that all replicas eventually converge to the same state.
+YGo implements a text CRDT with three key mathematical properties:
 
-This CRDT though is a hybrid of both Convergent and Commutative CRDT's.
-- Updates are Commutative
-- Deletes are Convergent
+- Commutativity: The order of operations doesn't affect the final result
+- Associativity: Grouping of operations doesn't affect the final result
+- Idempotence: Applying the same operation multiple times doesn't change the result
 
-### What problem do CRDT's solve?
-The core idea behind these data types is that they don't require any co-ordination. Think of a typical async network scenario where a node has some data other nodes in the network might be interested in. The way you would model that is with a centralized process that co-ordinates stuff and orchestrates correctness of data i.e. a the messages should be delivered in order they were sent. In CRDT-land, the same use case would follow but without a centralized process. Each node in a network can be thought of as self-healing, in the sense that they can get messages from other nodes in any order, after any amount of time and still at the end, each node in the network, will converge to the same state. Regardless of how fragile network is, CRDT's have the property to always endup with the same state.
+This makes YGo ideal for collaborative applications where:
 
-By this point you would've figure out one thing. They are not good in scenarios that require strong consistency. Today, they are used in collaborative or local-first software. Where consistency is desired eventually and not real-time.
+- Network connections may be unreliable
+- Users need to work offline
+- Real-time collaboration is required without strict coordination
 
-### Current status of the project:
-This library will be a learning project and focusing on text-based CRDT for now. Future roadmap is still TBD.
+🔧 Installation
+`go get github.com/amoghyermalkar123/ygo`
 
-### Examples:
-Say in one process you do this:
+📝 Usage
+Basic Example
 ```go
-	// Create a new YDoc instance
-	doc := ygo.NewYDoc()
 
-	// Insert text into the document
-	err := doc.InsertText(0, "Hello, World!")
-	if err != nil {
-		panic(err)
-	}
+// Create a new collaborative document
+doc := ygo.NewYDoc()
 
-	fmt.Println(doc.Content())
-	// Hello, World!
+// Insert text
+err := doc.InsertText(0, "Hello, World!")
+if err != nil {
+    // Handle error
+}
+
+// Get current document content
+fmt.Println(doc.Content()) // Output: Hello, World!
+
+// Delete some text
+err = doc.DeleteText(7, 5) // Delete "World"
+if err != nil {
+    // Handle error
+}
+
+fmt.Println(doc.Content()) // Output: Hello, !
 ```
 
-And in another process:
+Synchronizing Documents
 ```go
-	// Create a new YDoc instance
-	doc := ygo.NewYDoc()
+// Document 1
+docA := ygo.NewYDoc()
+docA.InsertText(0, "Hello, collaborative world!")
 
-	// Insert text into the document
-	err := doc.InsertText(0, "Hello, Amazing World!")
-	if err != nil {
-		panic(err)
-	}
+// Encode state as update
+update, err := docA.EncodeStateAsUpdate()
+if err != nil {
+    // Handle error
+}
 
-	fmt.Println(doc.Content())
-	// Hello, World!
+// Document 2 (could be on a different machine)
+docB := ygo.NewYDoc()
+
+// Apply update from Document 1
+err = docB.ApplyUpdate(update)
+if err != nil {
+    // Handle error
+}
+
+// Both documents now have the same content
+fmt.Println(docB.Content()) // Output: Hello, collaborative world!
 ```
 
-Eventually when you do this on both nodes:
-
+Handling Concurrent Edits
 ```go
-localDoc.ApplyUpdate(// json data)
+// Initial document
+source := ygo.NewYDoc()
+source.InsertText(0, "Hello World")
+
+// Create update to share
+update1, _ := source.EncodeStateAsUpdate()
+
+// Two clients receive the initial state
+client1 := ygo.NewYDoc()
+client2 := ygo.NewYDoc()
+client1.ApplyUpdate(update1)
+client2.ApplyUpdate(update1)
+
+// Client 1 makes an edit
+client1.InsertText(6, "beautiful ")
+
+// Client 2 makes a different edit at the same position
+client2.InsertText(6, "amazing ")
+
+// Generate updates from both clients
+update2, _ := client1.EncodeStateAsUpdate()
+update3, _ := client2.EncodeStateAsUpdate()
+
+// Apply both updates to both clients
+client1.ApplyUpdate(update3)
+client2.ApplyUpdate(update2)
+
+// Both clients now have identical content
+// The exact order depends on client IDs for conflict resolution
+fmt.Println(client1.Content()) // Both clients have the same content
+fmt.Println(client2.Content()) // with both edits integrated
 ```
 
-Both of the nodes will end up with the same data, in this case -
-```
-Hello, Amazing World
-```
+🏗️ Architecture
+YGo consists of several core components:
 
-CRDT's are protocol and network agnostic so we can use HTTP, QUIC, raw TCP socket, Websockets, anything really as long as we can connect to a process on the Internet.
+- YDoc: The main document interface that users interact with
+- BlockStore: The underlying data structure that maintains blocks of text
+- Block: The basic unit of text storage with metadata for CRDT operations
+- MarkerSystem: Manages insertion positions throughout the document
+
+🛣️ Roadmap
+
+- Performance optimizations for large documents
+- Additional CRDT data types (arrays, maps, counters)
+- Network integration examples
+- Developer tools and visualizations
+- Interoperability with other CRDT implementations
+
+📄 License
+This project is licensed under the MIT License - see the LICENSE file for details.
+📚 Learn More About CRDTs
+
+A Comprehensive Study of CRDTs
+Yata: The Paper
+Local-First Software
+
+🙏 Acknowledgements
+This implementation draws inspiration from:
+Yjs
