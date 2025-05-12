@@ -142,3 +142,4 @@ This project is licensed under the Apache-2.0 license.
 🙏 Acknowledgements:
 This implementation draws inspiration from:
 - ([Yjs](https://github.com/yjs/yjs))
+- [Y-crdt](https://github.com/y-crdt/y-crdt)
