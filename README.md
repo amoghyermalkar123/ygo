@@ -127,8 +127,8 @@ YGo consists of several core components:
 🛣️ Roadmap:
 - Performance optimizations for large documents
 - Additional CRDT data types (arrays, maps, counters)
-- Network integration examples
-- Developer tools and visualizations
+- Network integration examples (WIP)
+- Developer tools and visualizations (WIP)
 - Interoperability with other CRDT implementations
 
 📄 License:
