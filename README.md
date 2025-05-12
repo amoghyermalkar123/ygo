@@ -25,6 +25,8 @@ This makes YGo ideal for collaborative applications where:
 - Real-time collaboration is required without strict coordination
 
 🔧 Installation
+This library is ***NOT*** production ready. However feel free to play around with it and/or report issues.
+
 ```bash
 go get github.com/amoghyermalkar123/ygo
 ```
