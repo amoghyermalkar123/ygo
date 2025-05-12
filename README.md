@@ -2,7 +2,7 @@
 
 YGo is a lightweight, efficient implementation of a text-based Conflict-Free Replicated Data Type (CRDT) in Go. Based on the Yata algorithm ("Yet Another Transformation Approach"), YGo enables real-time collaborative editing with strong eventual consistency guarantees without requiring a central coordinator.
 
-🚀 Features
+🚀 Features:
 - **Collaborative Text Editing:** Multiple users can edit the same document concurrently
 - **Conflict-Free Resolution:** Automatic handling of conflicting edits
 - **Offline-First Support:** Work offline and synchronize changes when reconnected
@@ -24,7 +24,7 @@ This makes YGo ideal for collaborative applications where:
 - Users need to work offline
 - Real-time collaboration is required without strict coordination
 
-🔧 Installation
+🔧 Installation:
 This library is ***NOT*** production ready. However feel free to play around with it and/or report issues.
 
 ```bash
@@ -116,7 +116,7 @@ fmt.Println(client1.Content()) // Both clients have the same content
 fmt.Println(client2.Content()) // with both edits integrated
 ```
 
-🏗️ Architecture
+🏗️ Architecture:
 YGo consists of several core components:
 
 - YDoc: The main document interface that users interact with
@@ -124,23 +124,21 @@ YGo consists of several core components:
 - Block: The basic unit of text storage with metadata for CRDT operations
 - MarkerSystem: Manages insertion positions throughout the document
 
-🛣️ Roadmap
-
+🛣️ Roadmap:
 - Performance optimizations for large documents
 - Additional CRDT data types (arrays, maps, counters)
 - Network integration examples
 - Developer tools and visualizations
 - Interoperability with other CRDT implementations
 
-📄 License
-This project is licensed under the MIT License - see the LICENSE file for details.
-📚 Learn More About CRDTs
+📄 License:
+This project is licensed under the Apache-2.0 license.
 
-A Comprehensive Study of CRDTs
+📚 Learn More About CRDTs:
 - Paper this library is based on: https://www.researchgate.net/publication/310212186_Near_Real-Time_Peer-to-Peer_Shared_Editing_on_Extensible_Data_Types
 - [CRDT Website](https://crdt.tech/): to learn about CRDT's in depth
 - I recommend reading this entire [blog series](https://www.bartoszsypytkowski.com/the-state-of-a-state-based-crdts/) by Bartosz (maintainer of the y-crdt project) 
 
-🙏 Acknowledgements
+🙏 Acknowledgements:
 This implementation draws inspiration from:
 - ([Yjs](https://github.com/yjs/yjs))
