@@ -3,7 +3,7 @@
 YGo is a lightweight, efficient implementation of a text-based Conflict-Free Replicated Data Type (CRDT) in Go. Based on the Yata algorithm ("Yet Another Transformation Approach"), YGo enables real-time collaborative editing with strong eventual consistency guarantees without requiring a central coordinator.
 
 🚀 Features
-- *Collaborative Text Editing:* Multiple users can edit the same document concurrently
+- **Collaborative Text Editing:** Multiple users can edit the same document concurrently
 - *Conflict-Free Resolution:* Automatic handling of conflicting edits
 - *Offline-First Support:* Work offline and synchronize changes when reconnected
 - *Network Agnostic:* Use with any transport layer (WebSockets, HTTP, QUIC, etc.)
