@@ -1,22 +1,22 @@
-# YGo: A Text-based Conflict-Free Replicated Data Type in Go
+# YGo: A Text-based CRDT in Go
 
 YGo is a lightweight, efficient implementation of a text-based Conflict-Free Replicated Data Type (CRDT) in Go. Based on the Yata algorithm ("Yet Another Transformation Approach"), YGo enables real-time collaborative editing with strong eventual consistency guarantees without requiring a central coordinator.
 
 🚀 Features
 - **Collaborative Text Editing:** Multiple users can edit the same document concurrently
-- *Conflict-Free Resolution:* Automatic handling of conflicting edits
-- *Offline-First Support:* Work offline and synchronize changes when reconnected
-- *Network Agnostic:* Use with any transport layer (WebSockets, HTTP, QUIC, etc.)
-- *Lightweight:* Minimal dependencies and efficient memory usage
-- *Fully Tested:* Comprehensive test suite ensuring reliability
+- **Conflict-Free Resolution:** Automatic handling of conflicting edits
+- **Offline-First Support:** Work offline and synchronize changes when reconnected
+- **Network Agnostic:** Use with any transport layer (WebSockets, HTTP, QUIC, etc.)
+- **Lightweight:** Minimal dependencies and efficient memory usage
+- **Fully Tested:** Comprehensive test suite ensuring reliability
 
 📚 What are CRDTs?
 CRDTs (Conflict-Free Replicated Data Types) are a family of data structures that enable multiple processes to independently update shared data without coordination, while ensuring that all replicas eventually converge to the same state.
 YGo implements a text CRDT with three key mathematical properties:
 
-- *Commutativity:* The order of operations doesn't affect the final result
-- *Associativity:* Grouping of operations doesn't affect the final result
-- *Idempotence:* Applying the same operation multiple times doesn't change the result
+- **Commutativity:** The order of operations doesn't affect the final result
+- **Associativity:** Grouping of operations doesn't affect the final result
+- **Idempotence:** Applying the same operation multiple times doesn't change the result
 
 This makes YGo ideal for collaborative applications where:
 
