@@ -2,7 +2,8 @@ package blockstore
 
 import (
 	"testing"
-	"ygo/logger"
+
+	"github.com/amoghyermalkar123/ygo/logger"
 
 	"github.com/stretchr/testify/assert"
 )

@@ -1,4 +1,4 @@
-module ygo
+module github.com/amoghyermalkar123/ygo
 
 go 1.23.8
 

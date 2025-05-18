@@ -4,10 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"sort"
-	"ygo/internal/block"
-	"ygo/internal/blockstore"
-	"ygo/internal/decoder"
-	"ygo/logger"
+
+	"github.com/amoghyermalkar123/ygo/internal/block"
+	"github.com/amoghyermalkar123/ygo/internal/blockstore"
+	"github.com/amoghyermalkar123/ygo/internal/decoder"
+	"github.com/amoghyermalkar123/ygo/logger"
 )
 
 type YDoc struct {

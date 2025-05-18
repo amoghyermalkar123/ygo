@@ -3,7 +3,8 @@ package decoder
 import (
 	"encoding/json"
 	"fmt"
-	"ygo/internal/block"
+
+	"github.com/amoghyermalkar123/ygo/internal/block"
 )
 
 func DecodeUpdate(update []byte) (*block.Updates, error) {

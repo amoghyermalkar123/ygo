@@ -4,8 +4,8 @@ import (
 	"errors"
 	"time"
 
-	"ygo/internal/block"
-	"ygo/internal/utils"
+	"github.com/amoghyermalkar123/ygo/internal/block"
+	"github.com/amoghyermalkar123/ygo/internal/utils"
 )
 
 var (

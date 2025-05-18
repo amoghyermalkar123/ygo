@@ -1,6 +1,6 @@
 package utils
 
-import "ygo/internal/block"
+import "github.com/amoghyermalkar123/ygo/internal/block"
 
 func EqualID(a, b block.ID) bool {
 	return a.Client == b.Client && a.Clock == b.Clock

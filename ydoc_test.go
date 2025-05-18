@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"ygo"
+	"github.com/amoghyermalkar123/ygo"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

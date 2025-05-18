@@ -3,7 +3,8 @@ package marker
 import (
 	"testing"
 	"time"
-	"ygo/internal/block"
+
+	"github.com/amoghyermalkar123/ygo/internal/block"
 )
 
 func TestAddAndFindMarker(t *testing.T) {

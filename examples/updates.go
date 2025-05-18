@@ -1,7 +1,7 @@
 package examples
 
 import (
-	"ygo"
+	"github.com/amoghyermalkar123/ygo"
 )
 
 func update() {

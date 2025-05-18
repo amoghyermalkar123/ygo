@@ -5,10 +5,10 @@ import (
 	"math/rand"
 	"sort"
 
-	"ygo/internal/block"
-	markers "ygo/internal/marker"
-	"ygo/internal/utils"
-	"ygo/logger"
+	"github.com/amoghyermalkar123/ygo/internal/block"
+	markers "github.com/amoghyermalkar123/ygo/internal/marker"
+	"github.com/amoghyermalkar123/ygo/internal/utils"
+	"github.com/amoghyermalkar123/ygo/logger"
 
 	"go.uber.org/zap"
 )

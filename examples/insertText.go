@@ -2,7 +2,8 @@ package examples
 
 import (
 	"fmt"
-	"ygo"
+
+	"github.com/amoghyermalkar123/ygo"
 )
 
 func insertText() {

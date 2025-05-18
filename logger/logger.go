@@ -3,7 +3,8 @@ package logger
 import (
 	"os"
 	"sync"
-	"ygo/internal/block"
+
+	"github.com/amoghyermalkar123/ygo/internal/block"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
